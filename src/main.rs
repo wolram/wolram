@@ -1,6 +1,8 @@
 mod state_machine;
 
-use state_machine::{AuditRecord, Job, JobOutcome, RetryConfig, StateMachine, Transition};
+use state_machine::{
+    AuditRecord, Job, JobOutcome, ModelTier, RetryConfig, StateMachine, Transition,
+};
 
 fn main() {
     let mut job = Job::new(
@@ -12,12 +14,21 @@ fn main() {
     println!("Job: {} ({})", job.description, job.id);
     println!("State: {}\n", job.state);
 
-    // Walk through the state machine with simulated outcomes.
-    let outcomes = [
-        JobOutcome::Success,
-        JobOutcome::Success,
-        JobOutcome::Success,
-    ];
+    // INIT → DEFINE_AGENT
+    StateMachine::next(&mut job, JobOutcome::Success);
+    println!("  → Transitioned to {}", job.state);
+
+    // Simulate agent assignment during DEFINE_AGENT phase.
+    job.assign_agent("code_generation".to_string(), ModelTier::Sonnet);
+    println!(
+        "  ✦ Assigned agent: skill={}, model={}, est. cost=${:.3}",
+        job.agent.as_ref().unwrap().skill,
+        job.agent.as_ref().unwrap().model,
+        job.estimated_cost_usd(),
+    );
+
+    // Walk through remaining states.
+    let outcomes = [JobOutcome::Success, JobOutcome::Success];
 
     for outcome in outcomes {
         let transition = StateMachine::next(&mut job, outcome);

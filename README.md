@@ -55,7 +55,7 @@ Brainstorm / Reasoning
 - [x] 4-stage state machine with configurable retry logic
 - [ ] Intelligent skill/model routing per job
 - [ ] Git integration (auto-commit, branching, PR generation)
-- [ ] Audit trail with timestamp, model, cost tracking
+- [x] Audit trail with timestamp, model, cost tracking
 - [ ] CI/CD pipeline via GitHub Actions
 - [ ] Web interface (wolram.com.br)
 
