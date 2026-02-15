@@ -52,7 +52,7 @@ Brainstorm / Reasoning
 
 - [ ] CLI interface (terminal-first)
 - [ ] TODO generation from natural language prompts
-- [ ] 4-stage state machine with configurable retry logic
+- [x] 4-stage state machine with configurable retry logic
 - [ ] Intelligent skill/model routing per job
 - [ ] Git integration (auto-commit, branching, PR generation)
 - [ ] Audit trail with timestamp, model, cost tracking
