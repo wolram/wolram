@@ -1,4 +1,4 @@
-# WOLRAM
+# WOLRAM 
 
 Enterprise-grade orchestration for AI-assisted development.
 
