@@ -76,3 +76,126 @@ impl AnthropicClient {
         Ok(body)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wiremock::matchers::{header, method};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    fn test_request() -> MessagesRequest {
+        MessagesRequest {
+            model: "claude-sonnet-4-5-20250929".into(),
+            max_tokens: 1024,
+            messages: vec![super::super::types::Message {
+                role: "user".into(),
+                content: "Hi".into(),
+            }],
+        }
+    }
+
+    #[tokio::test]
+    async fn successful_response_parsing() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(header("x-api-key", "test-key"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": "msg_123",
+                "content": [{"type": "text", "text": "Hello!"}],
+                "model": "claude-sonnet-4-5-20250929",
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 10, "output_tokens": 5}
+            })))
+            .mount(&server)
+            .await;
+
+        let client = AnthropicClient::with_base_url("test-key".into(), server.uri());
+        let resp = client.send_message(&test_request()).await.unwrap();
+        assert_eq!(resp.id, "msg_123");
+        assert_eq!(resp.content[0].text, "Hello!");
+        assert_eq!(resp.usage.input_tokens, 10);
+        assert_eq!(resp.usage.output_tokens, 5);
+        assert_eq!(resp.stop_reason, Some("end_turn".into()));
+    }
+
+    #[tokio::test]
+    async fn rate_limit_429_with_retry_after() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(429).insert_header("retry-after", "5"),
+            )
+            .mount(&server)
+            .await;
+
+        let client = AnthropicClient::with_base_url("key".into(), server.uri());
+        let err = client.send_message(&test_request()).await.unwrap_err();
+        match err {
+            AnthropicError::RateLimited { retry_after_ms } => {
+                assert_eq!(retry_after_ms, 5000);
+            }
+            other => panic!("Expected RateLimited, got: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn rate_limit_429_without_header() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(429))
+            .mount(&server)
+            .await;
+
+        let client = AnthropicClient::with_base_url("key".into(), server.uri());
+        let err = client.send_message(&test_request()).await.unwrap_err();
+        match err {
+            AnthropicError::RateLimited { retry_after_ms } => {
+                assert_eq!(retry_after_ms, 1000); // default fallback
+            }
+            other => panic!("Expected RateLimited, got: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn api_error_500() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(500).set_body_string("Internal Server Error"),
+            )
+            .mount(&server)
+            .await;
+
+        let client = AnthropicClient::with_base_url("key".into(), server.uri());
+        let err = client.send_message(&test_request()).await.unwrap_err();
+        match err {
+            AnthropicError::ApiError { status, message } => {
+                assert_eq!(status, 500);
+                assert!(message.contains("Internal Server Error"));
+            }
+            other => panic!("Expected ApiError, got: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn client_sends_correct_headers() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(header("x-api-key", "my-secret-key"))
+            .and(header("anthropic-version", "2023-06-01"))
+            .and(header("content-type", "application/json"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": "msg_456",
+                "content": [{"type": "text", "text": "ok"}],
+                "model": "test",
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 1, "output_tokens": 1}
+            })))
+            .mount(&server)
+            .await;
+
+        let client = AnthropicClient::with_base_url("my-secret-key".into(), server.uri());
+        let resp = client.send_message(&test_request()).await.unwrap();
+        assert_eq!(resp.id, "msg_456");
+    }
+}
