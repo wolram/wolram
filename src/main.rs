@@ -1,10 +1,104 @@
+mod anthropic;
+mod cli;
+mod config;
+mod git;
+mod orchestrator;
+mod router;
 mod state_machine;
+mod ui;
 
+use anyhow::{bail, Result};
+use clap::Parser;
+
+use cli::{Cli, Command, ModelArg};
+use config::WolramConfig;
+use orchestrator::JobOrchestrator;
 use state_machine::{
     AuditRecord, Job, JobOutcome, ModelTier, RetryConfig, StateMachine, Transition,
 };
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<()> {
+    let cli = Cli::parse();
+    let config = WolramConfig::load()?;
+
+    // Resolve effective values: CLI overrides > config > defaults.
+    let max_retries = cli.max_retries.unwrap_or(config.max_retries);
+    let model_tier = cli
+        .model
+        .map(model_arg_to_tier)
+        .unwrap_or_else(|| parse_model_tier(&config.default_model_tier));
+    let verbose = cli.verbose;
+
+    match cli.command {
+        Command::Run { description, file } => {
+            let mut job = if let Some(path) = file {
+                let contents = std::fs::read_to_string(&path)
+                    .map_err(|e| anyhow::anyhow!("Failed to read {path}: {e}"))?;
+                serde_json::from_str::<Job>(&contents)
+                    .map_err(|e| anyhow::anyhow!("Failed to parse job JSON from {path}: {e}"))?
+            } else if let Some(desc) = description {
+                Job::new(
+                    desc,
+                    RetryConfig {
+                        max_retries,
+                        base_delay_ms: config.base_delay_ms,
+                    },
+                )
+            } else {
+                bail!("Provide a job description or --file");
+            };
+
+            let client = if config.api_key.is_empty() {
+                None
+            } else {
+                Some(anthropic::AnthropicClient::new(config.api_key.clone()))
+            };
+            let has_git = git::GitManager::open(std::path::Path::new(".")).is_ok();
+            let orch = JobOrchestrator::new(client, has_git);
+
+            let progress = ui::JobProgress::start(&job.description);
+
+            if verbose {
+                eprintln!("Starting job: {} ({})", job.description, job.id);
+                eprintln!("Model: {model_tier}, Max retries: {max_retries}");
+            }
+
+            let record = orch.run_job(&mut job).await?;
+
+            progress.complete(&state_machine::JobOutcome::Success);
+            progress.print_audit(&record);
+        }
+
+        Command::Status => {
+            println!("Status tracking not yet implemented");
+        }
+
+        Command::Demo => {
+            run_demo();
+        }
+    }
+
+    Ok(())
+}
+
+fn model_arg_to_tier(arg: ModelArg) -> ModelTier {
+    match arg {
+        ModelArg::Haiku => ModelTier::Haiku,
+        ModelArg::Sonnet => ModelTier::Sonnet,
+        ModelArg::Opus => ModelTier::Opus,
+    }
+}
+
+fn parse_model_tier(s: &str) -> ModelTier {
+    match s.to_lowercase().as_str() {
+        "haiku" => ModelTier::Haiku,
+        "opus" => ModelTier::Opus,
+        _ => ModelTier::Sonnet,
+    }
+}
+
+fn run_demo() {
     let mut job = Job::new(
         "Example: implement hero section layout".to_string(),
         RetryConfig::default(),
