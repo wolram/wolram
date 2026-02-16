@@ -1,3 +1,8 @@
+//! Cliente HTTP para a API Anthropic Messages.
+//!
+//! Encapsula a lógica de autenticação, envio de requisições e tratamento
+//! de respostas (incluindo rate limiting e erros HTTP). Usa `reqwest` internamente.
+
 use std::time::Duration;
 
 use reqwest::Client;
@@ -5,20 +10,30 @@ use reqwest::Client;
 use super::error::AnthropicError;
 use super::types::{MessagesRequest, MessagesResponse};
 
+// URL padrão da API Anthropic Messages v1.
 const API_URL: &str = "https://api.anthropic.com/v1/messages";
 
+/// Cliente HTTP para enviar requisições à API Anthropic Messages.
+///
+/// Gerencia a chave de API, timeouts de conexão e a URL base.
+/// Em testes, a URL base pode ser apontada para um servidor mock
+/// via [`with_base_url`](Self::with_base_url).
 pub struct AnthropicClient {
+    // Chave de autenticação para a API Anthropic.
     api_key: String,
+    // Cliente HTTP reqwest reutilizável (com pool de conexões).
     client: Client,
+    // URL base para requisições (padrão: API de produção da Anthropic).
     base_url: String,
 }
 
 impl AnthropicClient {
+    /// Cria um novo cliente apontando para a API de produção da Anthropic.
     pub fn new(api_key: String) -> Self {
         Self::with_base_url(api_key, API_URL.to_string())
     }
 
-    /// Create a client pointing at a custom base URL (useful for testing).
+    /// Cria um cliente apontando para uma URL base customizada (útil para testes com mock server).
     pub fn with_base_url(api_key: String, base_url: String) -> Self {
         let client = Client::builder()
             .connect_timeout(Duration::from_secs(10))
@@ -32,6 +47,10 @@ impl AnthropicClient {
         }
     }
 
+    /// Envia uma requisição de mensagem para a API Anthropic.
+    ///
+    /// Retorna [`MessagesResponse`] em caso de sucesso, ou [`AnthropicError`]
+    /// para rate limiting (429), erros HTTP ou falhas de rede.
     pub async fn send_message(
         &self,
         req: &MessagesRequest,
@@ -48,7 +67,9 @@ impl AnthropicClient {
 
         let status = response.status();
 
+        // Verifica se o servidor retornou HTTP 429 (rate limit).
         if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+            // Extrai o header retry-after e converte de segundos para milissegundos.
             let retry_after = response
                 .headers()
                 .get("retry-after")
@@ -61,6 +82,7 @@ impl AnthropicClient {
             });
         }
 
+        // Qualquer outro erro HTTP: extrai o corpo da resposta como mensagem de erro.
         if !status.is_success() {
             let message = response
                 .text()
@@ -72,6 +94,7 @@ impl AnthropicClient {
             });
         }
 
+        // Sucesso: deserializa o corpo JSON como MessagesResponse.
         let body = response.json::<MessagesResponse>().await?;
         Ok(body)
     }
@@ -148,7 +171,7 @@ mod tests {
         let err = client.send_message(&test_request()).await.unwrap_err();
         match err {
             AnthropicError::RateLimited { retry_after_ms } => {
-                assert_eq!(retry_after_ms, 1000); // default fallback
+                assert_eq!(retry_after_ms, 1000); // fallback padrão
             }
             other => panic!("Expected RateLimited, got: {other:?}"),
         }

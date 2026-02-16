@@ -1,14 +1,14 @@
-# WOLRAM configuration file
-# Copy this file to wolram.toml and edit as needed.
-# API key can also be set via ANTHROPIC_API_KEY env var (takes precedence).
+# Arquivo de configuração do WOLRAM
+# Copie este arquivo para wolram.toml e edite conforme necessário.
+# A chave da API também pode ser definida via variável de ambiente ANTHROPIC_API_KEY (tem precedência).
 
 # api_key = "sk-ant-..."
 
-# Default model tier: haiku, sonnet, opus
+# Nível de modelo padrão: haiku, sonnet, opus
 default_model_tier = "sonnet"
 
-# Maximum retries before marking a job as failed
+# Número máximo de retentativas antes de marcar um job como falho
 max_retries = 3
 
-# Base delay in milliseconds for exponential backoff
+# Atraso base em milissegundos para backoff exponencial
 base_delay_ms = 1000

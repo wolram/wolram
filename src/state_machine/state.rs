@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use super::job::{FailureKind, Job, JobOutcome, JobStatus};
 
-/// The four states of the WOLRAM job state machine.
+/// Os quatro estados da máquina de estados de jobs do WOLRAM.
 ///
-/// Each job flows through: INIT → DEFINE_AGENT → PROCESS → END
+/// Cada job flui por: INIT → DEFINE_AGENT → PROCESS → END
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum State {
     Init,
@@ -26,29 +26,32 @@ impl fmt::Display for State {
     }
 }
 
-/// The result of evaluating a state transition.
+/// O resultado da avaliação de uma transição de estado.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Transition {
-    /// Advance to the next state.
+    /// Avança para o próximo estado.
     Next(State),
-    /// Retry the current state due to a failure.
+    /// Retenta o estado atual devido a uma falha.
     Retry { state: State, reason: FailureKind },
-    /// The job has completed (successfully or with a terminal failure).
+    /// O job foi concluído (com sucesso ou com falha terminal).
     Complete(JobOutcome),
 }
 
-/// Drives a `Job` through the state machine.
+/// Conduz um [`Job`] pela máquina de estados.
+///
+/// A struct não possui estado interno — todas as mutações acontecem
+/// diretamente no [`Job`] passado por referência mutável.
 pub struct StateMachine;
 
 impl StateMachine {
-    /// Compute the next transition for the given job based on its current state
-    /// and the provided outcome.
+    /// Calcula a próxima transição para o job dado, baseado no estado atual
+    /// e no resultado fornecido.
     ///
-    /// - In `Init` and `DefineAgent`, success advances to the next state;
-    ///   failure retries if retries remain, otherwise completes with failure.
-    /// - In `Process`, same logic applies but a successful completion
-    ///   transitions to `End`.
-    /// - `End` is terminal and always returns `Complete`.
+    /// - Em `Init` e `DefineAgent`, sucesso avança para o próximo estado;
+    ///   falha retenta se há retentativas restantes, caso contrário completa com falha.
+    /// - Em `Process`, a mesma lógica se aplica, mas uma conclusão bem-sucedida
+    ///   transiciona para `End`.
+    /// - `End` é terminal e sempre retorna `Complete`.
     pub fn next(job: &mut Job, outcome: JobOutcome) -> Transition {
         let transition = match job.state {
             State::Init => match &outcome {
@@ -66,18 +69,19 @@ impl StateMachine {
             State::End => Transition::Complete(JobOutcome::Success),
         };
 
-        // Apply the transition to the job.
+        // Aplica a transição ao job.
         match &transition {
             Transition::Next(next_state) => {
                 job.state_history.push(job.state);
                 job.state = *next_state;
+                // Se o próximo estado é End, marca o job como concluído.
                 if *next_state == State::End {
                     job.status = JobStatus::Completed;
                 }
             }
             Transition::Retry { state, .. } => {
-                // State stays the same; retry count was already incremented
-                // in handle_failure.
+                // Estado permanece o mesmo; o contador de retentativas
+                // já foi incrementado em handle_failure.
                 job.state_history.push(*state);
             }
             Transition::Complete(outcome) => {
@@ -92,6 +96,7 @@ impl StateMachine {
         transition
     }
 
+    /// Trata uma falha: incrementa retentativas e decide entre retentar ou concluir.
     fn handle_failure(job: &mut Job, kind: FailureKind) -> Transition {
         job.retry_count += 1;
         if job.retry_count <= job.retry_config.max_retries {
@@ -138,7 +143,7 @@ mod tests {
         assert_eq!(job.state, State::End);
         assert_eq!(job.status, JobStatus::Completed);
 
-        // End is terminal.
+        // End é terminal.
         let t = StateMachine::next(&mut job, JobOutcome::Success);
         assert_eq!(t, Transition::Complete(JobOutcome::Success));
     }
@@ -146,12 +151,12 @@ mod tests {
     #[test]
     fn business_failure_retries_then_fails() {
         let mut job = make_job(2);
-        // Move to Process state.
+        // Avança até o estado Process.
         StateMachine::next(&mut job, JobOutcome::Success);
         StateMachine::next(&mut job, JobOutcome::Success);
         assert_eq!(job.state, State::Process);
 
-        // First failure — retry 1/2.
+        // Primeira falha — retentativa 1/2.
         let t = StateMachine::next(
             &mut job,
             JobOutcome::Failure(FailureKind::Business("tests failed".into())),
@@ -160,7 +165,7 @@ mod tests {
         assert_eq!(job.retry_count, 1);
         assert_eq!(job.state, State::Process);
 
-        // Second failure — retry 2/2.
+        // Segunda falha — retentativa 2/2.
         let t = StateMachine::next(
             &mut job,
             JobOutcome::Failure(FailureKind::Business("tests failed again".into())),
@@ -168,7 +173,7 @@ mod tests {
         assert!(matches!(t, Transition::Retry { .. }));
         assert_eq!(job.retry_count, 2);
 
-        // Third failure — max retries exceeded, terminal failure.
+        // Terceira falha — retentativas máximas excedidas, falha terminal.
         let t = StateMachine::next(
             &mut job,
             JobOutcome::Failure(FailureKind::Business("still failing".into())),
@@ -186,7 +191,7 @@ mod tests {
     fn system_failure_retries_then_fails() {
         let mut job = make_job(1);
 
-        // Fail in Init with a system error.
+        // Falha em Init com um erro de sistema.
         let t = StateMachine::next(
             &mut job,
             JobOutcome::Failure(FailureKind::System("API timeout".into())),
@@ -194,7 +199,7 @@ mod tests {
         assert!(matches!(t, Transition::Retry { .. }));
         assert_eq!(job.retry_count, 1);
 
-        // Second failure exceeds max retries.
+        // Segunda falha excede retentativas máximas.
         let t = StateMachine::next(
             &mut job,
             JobOutcome::Failure(FailureKind::System("API timeout".into())),
@@ -229,7 +234,7 @@ mod tests {
     fn retry_then_succeed() {
         let mut job = make_job(3);
 
-        // Fail once in Init.
+        // Falha uma vez em Init.
         let t = StateMachine::next(
             &mut job,
             JobOutcome::Failure(FailureKind::System("network error".into())),
@@ -237,7 +242,7 @@ mod tests {
         assert!(matches!(t, Transition::Retry { .. }));
         assert_eq!(job.state, State::Init);
 
-        // Succeed on retry.
+        // Sucesso na retentativa.
         let t = StateMachine::next(&mut job, JobOutcome::Success);
         assert_eq!(t, Transition::Next(State::DefineAgent));
         assert_eq!(job.state, State::DefineAgent);

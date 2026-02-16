@@ -1,37 +1,71 @@
+//! Tipos de dados para requisições e respostas da API Anthropic Messages.
+//!
+//! Todas as structs derivam `Serialize` e `Deserialize` para conversão JSON
+//! conforme o formato esperado pelo endpoint `v1/messages` da Anthropic.
+
 use serde::{Deserialize, Serialize};
 
+/// Corpo da requisição para o endpoint `/v1/messages` da API Anthropic.
+///
+/// Contém o modelo desejado, o limite de tokens e a lista de mensagens
+/// que compõem a conversa.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessagesRequest {
+    /// Identificador do modelo a ser usado (ex.: "claude-sonnet-4-5-20250929").
     pub model: String,
+    /// Número máximo de tokens na resposta gerada pelo modelo.
     pub max_tokens: u32,
+    /// Lista de mensagens compondo a conversa (usuário e assistente).
     pub messages: Vec<Message>,
 }
 
+/// Uma única mensagem em uma conversa com a API Anthropic.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
+    /// Papel do remetente: "user" ou "assistant".
     pub role: String,
+    /// Conteúdo textual da mensagem.
     pub content: String,
 }
 
+/// Resposta retornada pelo endpoint `/v1/messages` da API Anthropic.
+///
+/// Contém o identificador único, os blocos de conteúdo gerados, informações
+/// sobre o modelo utilizado e estatísticas de uso de tokens.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessagesResponse {
+    /// Identificador único da resposta (gerado pela API).
     pub id: String,
+    /// Blocos de conteúdo na resposta (normalmente texto).
     pub content: Vec<ContentBlock>,
+    /// Modelo que gerou a resposta.
     pub model: String,
+    /// Motivo da parada da geração (ex.: "end_turn", "max_tokens").
+    /// `None` se ainda em progresso.
     pub stop_reason: Option<String>,
+    /// Estatísticas de uso de tokens (entrada e saída).
     pub usage: Usage,
 }
 
+/// Um bloco de conteúdo dentro da resposta — atualmente apenas texto.
+///
+/// O campo `content_type` é serializado como `"type"` no JSON via `serde(rename)`,
+/// seguindo o formato da API da Anthropic.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContentBlock {
+    /// Tipo do bloco ("text"). Serializado como "type" no JSON.
     #[serde(rename = "type")]
     pub content_type: String,
+    /// Conteúdo textual deste bloco.
     pub text: String,
 }
 
+/// Estatísticas de consumo de tokens para uma chamada à API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Usage {
+    /// Número de tokens consumidos na entrada (prompt).
     pub input_tokens: u32,
+    /// Número de tokens gerados na saída (resposta).
     pub output_tokens: u32,
 }
 

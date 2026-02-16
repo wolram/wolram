@@ -4,11 +4,11 @@ use uuid::Uuid;
 
 use super::state::State;
 
-/// The model tier used for a job, determining cost and capability.
+/// O nível do modelo usado para um job, determinando custo e capacidade.
 ///
-/// - Simple tasks (rename, format, small edits) → Haiku
-/// - Medium tasks (implement function, write tests) → Sonnet
-/// - Complex tasks (architecture, multi-file refactor) → Opus
+/// - Tarefas simples (renomear, formatar, edições pequenas) → Haiku
+/// - Tarefas médias (implementar função, escrever testes) → Sonnet
+/// - Tarefas complexas (arquitetura, refatoração multi-arquivo) → Opus
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ModelTier {
     Haiku,
@@ -17,7 +17,7 @@ pub enum ModelTier {
 }
 
 impl ModelTier {
-    /// Approximate cost per job in USD for this model tier.
+    /// Custo aproximado por job em USD para este nível de modelo.
     pub fn estimated_cost_usd(&self) -> f64 {
         match self {
             ModelTier::Haiku => 0.001,
@@ -37,22 +37,23 @@ impl std::fmt::Display for ModelTier {
     }
 }
 
-/// Agent configuration assigned during the DEFINE_AGENT phase.
+/// Configuração do agente atribuída durante a fase DEFINE_AGENT.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AgentConfig {
-    /// The skill/agent type (e.g. "code_generation", "refactoring", "testing").
+    /// O tipo de habilidade/agente (ex.: "code_generation", "refactoring", "testing").
     pub skill: String,
-    /// The model tier selected for this job.
+    /// O nível de modelo selecionado para este job.
     pub model: ModelTier,
 }
 
-/// Distinguishes between logic failures and infrastructure failures.
-/// Both are retryable, but may warrant different handling strategies.
+/// Distingue entre falhas de lógica e falhas de infraestrutura.
+///
+/// Ambas são retriáveis, mas podem requerer estratégias de tratamento diferentes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FailureKind {
-    /// Task logic failed (wrong output, validation error, tests fail).
+    /// Lógica da tarefa falhou (saída incorreta, erro de validação, testes falharam).
     Business(String),
-    /// Infrastructure failed (API timeout, rate limit, network error).
+    /// Infraestrutura falhou (timeout da API, rate limit, erro de rede).
     System(String),
 }
 
@@ -65,14 +66,14 @@ impl std::fmt::Display for FailureKind {
     }
 }
 
-/// The result of executing a job stage.
+/// O resultado da execução de um estágio do job.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum JobOutcome {
     Success,
     Failure(FailureKind),
 }
 
-/// Tracks the lifecycle status of a job.
+/// Acompanha o status do ciclo de vida de um job.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum JobStatus {
     Pending,
@@ -81,12 +82,12 @@ pub enum JobStatus {
     Failed,
 }
 
-/// Configuration for retry behavior.
+/// Configuração do comportamento de retentativa.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RetryConfig {
-    /// Maximum number of retries before marking a job as failed.
+    /// Número máximo de retentativas antes de marcar o job como falho.
     pub max_retries: u32,
-    /// Base delay in milliseconds for exponential backoff.
+    /// Atraso base em milissegundos para backoff exponencial.
     pub base_delay_ms: u64,
 }
 
@@ -100,14 +101,18 @@ impl Default for RetryConfig {
 }
 
 impl RetryConfig {
-    /// Calculate the delay for a given retry attempt using exponential backoff.
-    /// delay = base_delay_ms * 2^(attempt - 1)
+    /// Calcula o atraso para uma determinada tentativa usando backoff exponencial.
+    ///
+    /// Fórmula: `atraso = base_delay_ms * 2^(tentativa - 1)`
     pub fn delay_for_attempt(&self, attempt: u32) -> u64 {
         self.base_delay_ms * 2u64.pow(attempt.saturating_sub(1))
     }
 }
 
-/// A single task in the WOLRAM job queue.
+/// Uma única tarefa na fila de jobs do WOLRAM.
+///
+/// O job percorre os estados INIT → DEFINE_AGENT → PROCESS → END,
+/// acumulando histórico de transições e informações do agente atribuído.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Job {
     pub id: String,
@@ -117,9 +122,9 @@ pub struct Job {
     pub state_history: Vec<State>,
     pub retry_count: u32,
     pub retry_config: RetryConfig,
-    /// Agent configuration assigned during the DEFINE_AGENT phase.
+    /// Configuração do agente atribuída durante a fase DEFINE_AGENT.
     pub agent: Option<AgentConfig>,
-    /// LLM response text from the PROCESS phase (None in stub mode).
+    /// Texto da resposta do LLM da fase PROCESS (None em modo stub).
     #[serde(default)]
     pub llm_response: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -127,6 +132,7 @@ pub struct Job {
 }
 
 impl Job {
+    /// Cria um novo job com a descrição e configuração de retentativa fornecidas.
     pub fn new(description: String, retry_config: RetryConfig) -> Self {
         let now = Utc::now();
         Self {
@@ -144,13 +150,13 @@ impl Job {
         }
     }
 
-    /// Assign an agent configuration to this job (typically during DEFINE_AGENT).
+    /// Atribui uma configuração de agente a este job (tipicamente durante DEFINE_AGENT).
     pub fn assign_agent(&mut self, skill: String, model: ModelTier) {
         self.agent = Some(AgentConfig { skill, model });
     }
 
-    /// Estimated cost in USD based on the assigned model tier.
-    /// Returns 0.0 if no agent has been assigned yet.
+    /// Custo estimado em USD baseado no nível do modelo atribuído.
+    /// Retorna 0.0 se nenhum agente foi atribuído ainda.
     pub fn estimated_cost_usd(&self) -> f64 {
         self.agent
             .as_ref()
@@ -159,20 +165,24 @@ impl Job {
     }
 }
 
-/// Structured audit record produced at job completion.
+/// Registro de auditoria estruturado produzido ao final de um job.
+///
+/// Contém todas as informações relevantes para rastreabilidade: identificadores,
+/// transições de estado, configuração do agente, contagem de retentativas,
+/// custo estimado e timestamps.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditRecord {
     pub job_id: String,
     pub description: String,
     pub status: JobStatus,
     pub state_transitions: Vec<State>,
-    /// Agent skill and model used, if assigned.
+    /// Habilidade e modelo do agente utilizados, se atribuídos.
     pub agent: Option<AgentConfig>,
     pub retry_count: u32,
     pub max_retries: u32,
-    /// Estimated cost in USD based on the model tier.
+    /// Custo estimado em USD baseado no nível do modelo.
     pub cost_usd: f64,
-    /// LLM response text, if available.
+    /// Texto da resposta do LLM, se disponível.
     #[serde(default)]
     pub llm_response: Option<String>,
     pub started_at: DateTime<Utc>,
@@ -181,7 +191,7 @@ pub struct AuditRecord {
 }
 
 impl AuditRecord {
-    /// Generate an audit record from a completed or failed job.
+    /// Gera um registro de auditoria a partir de um job concluído ou falho.
     pub fn from_job(job: &Job) -> Self {
         let now = Utc::now();
         let duration = now - job.created_at;

@@ -1,3 +1,9 @@
+//! Orquestrador de jobs do WOLRAM — conduz um job por todas as fases da máquina de estados.
+//!
+//! O [`JobOrchestrator`] é o ponto de entrada principal: valida o job (INIT),
+//! roteia habilidade e modelo (DEFINE_AGENT), executa via API ou modo stub (PROCESS),
+//! e produz um [`AuditRecord`] (END).
+
 use anyhow::{Result, bail};
 use std::time::Duration;
 use tokio::time::sleep;
@@ -9,18 +15,18 @@ use crate::state_machine::{
     AuditRecord, FailureKind, Job, JobOutcome, JobStatus, ModelTier, StateMachine, Transition,
 };
 
-/// Drives jobs through the full state machine lifecycle.
+/// Conduz jobs pelo ciclo de vida completo da máquina de estados.
 #[derive(Default)]
 pub struct JobOrchestrator {
-    /// Optional Anthropic client for real API calls.
+    /// Cliente Anthropic opcional para chamadas reais à API.
     pub client: Option<AnthropicClient>,
-    /// Whether git integration is available for auto-commits.
+    /// Se a integração git está disponível para auto-commits.
     pub has_git: bool,
-    /// Optional CLI model override — bypasses model selection when set.
+    /// Override de modelo opcional via CLI — ignora a seleção automática quando definido.
     pub model_override: Option<ModelTier>,
 }
 
-/// Map a `ModelTier` to the Anthropic API model identifier string.
+/// Mapeia um [`ModelTier`] para a string de identificador de modelo da API Anthropic.
 fn model_tier_to_api_string(tier: &ModelTier) -> &'static str {
     match tier {
         ModelTier::Haiku => "claude-haiku-4-5-20251001",
@@ -29,8 +35,9 @@ fn model_tier_to_api_string(tier: &ModelTier) -> &'static str {
     }
 }
 
-/// Resolve skill and model using an LLM client with optional model override.
-/// Tries LLM classification first, falls back to keyword scoring on failure.
+/// Resolve habilidade e modelo usando um cliente LLM com override de modelo opcional.
+///
+/// Tenta classificação via LLM primeiro; em caso de falha, usa pontuação por palavras-chave.
 pub async fn resolve_skill_and_model_with_client(
     client: &impl MessageSender,
     description: &str,
@@ -41,13 +48,13 @@ pub async fn resolve_skill_and_model_with_client(
         return (skill, model);
     }
 
-    // Fallback to keyword scoring
+    // Fallback para pontuação por palavras-chave.
     let skill = SkillRouter::route(description);
     let model = model_override.unwrap_or_else(|| ModelSelector::select(description));
     (skill, model)
 }
 
-/// Resolve skill and model using keyword scoring only (no LLM).
+/// Resolve habilidade e modelo usando apenas pontuação por palavras-chave (sem LLM).
 fn resolve_skill_and_model_keywords(
     description: &str,
     model_override: Option<ModelTier>,
@@ -58,7 +65,7 @@ fn resolve_skill_and_model_keywords(
 }
 
 impl JobOrchestrator {
-    /// Create a new orchestrator with an optional Anthropic client.
+    /// Cria um novo orquestrador com um cliente Anthropic opcional.
     #[cfg(test)]
     pub fn new(client: Option<AnthropicClient>, has_git: bool) -> Self {
         Self {
@@ -68,7 +75,7 @@ impl JobOrchestrator {
         }
     }
 
-    /// Create a new orchestrator with a model override.
+    /// Cria um novo orquestrador com override de modelo.
     pub fn with_model_override(
         client: Option<AnthropicClient>,
         has_git: bool,
@@ -81,13 +88,14 @@ impl JobOrchestrator {
         }
     }
 
-    /// Run a job through all state machine phases, returning an audit record.
+    /// Executa um job por todas as fases da máquina de estados, retornando um registro de auditoria.
     pub async fn run_job(&self, job: &mut Job) -> Result<AuditRecord> {
-        // INIT: validate and mark in-progress
+        // INIT: valida e marca como em progresso.
         job.status = JobStatus::InProgress;
         if job.description.trim().is_empty() {
             bail!("Job description must not be empty");
         }
+        // Tamanho máximo da descrição.
         const MAX_DESCRIPTION_LEN: usize = 10_000;
         if job.description.len() > MAX_DESCRIPTION_LEN {
             bail!(
@@ -100,7 +108,7 @@ impl JobOrchestrator {
             bail!("Unexpected transition from Init: {t:?}");
         }
 
-        // DEFINE_AGENT: route skill and select model
+        // DEFINE_AGENT: roteia habilidade e seleciona modelo.
         let (skill, model) = if let Some(client) = &self.client {
             resolve_skill_and_model_with_client(client, &job.description, self.model_override).await
         } else {
@@ -112,7 +120,7 @@ impl JobOrchestrator {
             bail!("Unexpected transition from DefineAgent: {t:?}");
         }
 
-        // PROCESS: execute (with retry support)
+        // PROCESS: executa (com suporte a retentativas).
         loop {
             let outcome = self.execute_process(job).await;
             let t = StateMachine::next(job, outcome);
@@ -135,7 +143,7 @@ impl JobOrchestrator {
             }
         }
 
-        // Git integration: commit results if git is available
+        // Integração git: commita resultados se git está disponível.
         if self.has_git
             && let Ok(gm) = GitManager::open(std::path::Path::new("."))
             && let Err(e) = gm.commit_job_result(job)
@@ -143,17 +151,19 @@ impl JobOrchestrator {
             eprintln!("  Warning: git commit failed: {e}");
         }
 
-        // END: produce audit record
+        // END: produz registro de auditoria.
         let record = AuditRecord::from_job(job);
         Ok(record)
     }
 
-    /// Execute the process phase. Uses the API client if available, otherwise simulates success.
-    /// On success, stores the LLM response text in `job.llm_response`.
+    /// Executa a fase de processamento. Usa o cliente da API se disponível;
+    /// caso contrário, simula sucesso (modo stub).
+    ///
+    /// Em caso de sucesso, armazena o texto da resposta do LLM em `job.llm_response`.
     async fn execute_process(&self, job: &mut Job) -> JobOutcome {
         let client = match &self.client {
             Some(c) => c,
-            None => return JobOutcome::Success, // stub mode
+            None => return JobOutcome::Success, // modo stub
         };
 
         let agent = match &job.agent {
@@ -194,6 +204,7 @@ impl JobOrchestrator {
     }
 }
 
+// Loga uma retentativa no stderr.
 fn log_retry(attempt: u32, max: u32, reason: &str, delay_ms: u64) {
     eprintln!("  ↻ Retry {attempt}/{max}: {reason} (waiting {delay_ms}ms)");
 }
@@ -281,7 +292,7 @@ mod tests {
         assert_eq!(agent.skill, "bug_fix");
     }
 
-    // --- Mock-based tests for resolve_skill_and_model_with_client ---
+    // --- Testes baseados em mock para resolve_skill_and_model_with_client ---
 
     use crate::anthropic::types::{ContentBlock, Usage};
     use crate::anthropic::{MessageSender, MessagesResponse};

@@ -1,13 +1,31 @@
+//! Tipos de erro para o cliente da API Anthropic.
+//!
+//! Define [`AnthropicError`] com variantes para rate limiting, erros da API
+//! e erros de rede. Usa `thiserror` para derivar `Display` e `Error`
+//! automaticamente a partir dos atributos `#[error(...)]`.
+
 use thiserror::Error;
 
+/// Erros que podem ocorrer ao interagir com a API da Anthropic.
+///
+/// As variantes cobrem os três cenários mais comuns de falha:
+/// - [`RateLimited`](AnthropicError::RateLimited) — o servidor retornou HTTP 429
+/// - [`ApiError`](AnthropicError::ApiError) — qualquer outro erro HTTP (4xx/5xx)
+/// - [`NetworkError`](AnthropicError::NetworkError) — falha na camada de rede
 #[derive(Debug, Error)]
 pub enum AnthropicError {
+    /// O servidor retornou HTTP 429 (rate limit).
+    /// O campo `retry_after_ms` indica quantos milissegundos esperar antes de retentar.
     #[error("rate limited, retry after {retry_after_ms}ms")]
     RateLimited { retry_after_ms: u64 },
 
+    /// Erro retornado pela API (ex.: 401 chave inválida, 500 erro interno).
+    /// Contém o código de status HTTP e a mensagem de erro do corpo da resposta.
     #[error("API error (status {status}): {message}")]
     ApiError { status: u16, message: String },
 
+    /// Falha de rede subjacente (DNS, conexão recusada, timeout).
+    /// Encapsula o erro original do `reqwest` via `#[from]`.
     #[error("network error: {0}")]
     NetworkError(#[from] reqwest::Error),
 }

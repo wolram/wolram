@@ -1,6 +1,12 @@
 # WOLRAM
 
+[![CI](https://github.com/wolram/wolram/actions/workflows/ci.yml/badge.svg)](https://github.com/wolram/wolram/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rust](https://img.shields.io/badge/Rust-edition%202024-orange.svg)](https://www.rust-lang.org/)
+
 Enterprise-grade orchestration for AI-assisted development.
+
+> **Projeto de estudo em Rust** — Orquestração de nível empresarial para desenvolvimento assistido por IA. Todo o código-fonte está comentado em português brasileiro (PT-BR) para fins didáticos.
 
 WOLRAM applies battle-tested enterprise automation patterns (inspired by UiPath's REFramework) to AI coding workflows — bringing state machine governance, retry logic, model routing, and full audit trails to LLM-powered development.
 
@@ -108,6 +114,12 @@ WOLRAM uses a layered routing strategy during the DEFINE_AGENT phase:
 - **clap** — CLI argument parsing
 - **tokio** — async runtime
 - **indicatif/console** — terminal UI with spinners and colored output
+
+## Contributing
+
+Contributions are welcome! Please run `cargo fmt`, `cargo clippy`, and `cargo test` before submitting a PR.
+
+Code comments are written in Brazilian Portuguese (PT-BR). Test function names follow Rust convention (English).
 
 ## Status
 

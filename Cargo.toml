@@ -2,10 +2,15 @@
 name = "wolram"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 description = "Enterprise-grade AI development orchestrator"
 license = "MIT"
 repository = "https://github.com/wolram/wolram"
 homepage = "https://wolram.com.br"
+readme = "README.md"
+authors = ["Marlow Sousa"]
+keywords = ["ai", "orchestration", "state-machine", "llm", "automation"]
+categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
