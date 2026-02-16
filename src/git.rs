@@ -16,9 +16,29 @@ impl GitManager {
     }
 
     /// Stage all changes and create a commit, returning the short hash.
+    ///
+    /// Sensitive files (wolram.toml, .env, .env.local, *.key) are excluded
+    /// from staging to prevent accidental exposure of secrets.
     pub fn commit(&self, message: &str) -> Result<String> {
         let mut index = self.repo.index()?;
-        index.add_all(["*"].iter(), IndexAddOption::DEFAULT, None)?;
+        index.add_all(
+            ["*"].iter(),
+            IndexAddOption::DEFAULT,
+            Some(&mut |path: &std::path::Path, _: &[u8]| -> i32 {
+                let name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("");
+                let excluded = ["wolram.toml", ".env", ".env.local"];
+                if excluded.iter().any(|e| name == *e)
+                    || name.ends_with(".key")
+                {
+                    1 // skip
+                } else {
+                    0 // add
+                }
+            }),
+        )?;
         index.write()?;
 
         let tree_oid = index.write_tree()?;

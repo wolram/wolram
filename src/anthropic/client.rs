@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use reqwest::Client;
 
 use super::error::AnthropicError;
@@ -8,13 +10,25 @@ const API_URL: &str = "https://api.anthropic.com/v1/messages";
 pub struct AnthropicClient {
     api_key: String,
     client: Client,
+    base_url: String,
 }
 
 impl AnthropicClient {
     pub fn new(api_key: String) -> Self {
+        Self::with_base_url(api_key, API_URL.to_string())
+    }
+
+    /// Create a client pointing at a custom base URL (useful for testing).
+    pub fn with_base_url(api_key: String, base_url: String) -> Self {
+        let client = Client::builder()
+            .connect_timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(120))
+            .build()
+            .expect("failed to build HTTP client");
         Self {
             api_key,
-            client: Client::new(),
+            client,
+            base_url,
         }
     }
 
@@ -24,7 +38,7 @@ impl AnthropicClient {
     ) -> Result<MessagesResponse, AnthropicError> {
         let response = self
             .client
-            .post(API_URL)
+            .post(&self.base_url)
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", "2023-06-01")
             .header("content-type", "application/json")

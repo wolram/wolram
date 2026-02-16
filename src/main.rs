@@ -14,7 +14,8 @@ use cli::{Cli, Command, ModelArg};
 use config::WolramConfig;
 use orchestrator::JobOrchestrator;
 use state_machine::{
-    AuditRecord, Job, JobOutcome, ModelTier, RetryConfig, StateMachine, Transition,
+    AuditRecord, Job, JobOutcome, JobStatus, ModelTier, RetryConfig, State, StateMachine,
+    Transition,
 };
 
 #[tokio::main]
@@ -31,8 +32,14 @@ async fn main() -> Result<()> {
             let mut job = if let Some(path) = file {
                 let contents = std::fs::read_to_string(&path)
                     .map_err(|e| anyhow::anyhow!("Failed to read {path}: {e}"))?;
-                serde_json::from_str::<Job>(&contents)
-                    .map_err(|e| anyhow::anyhow!("Failed to parse job JSON from {path}: {e}"))?
+                let mut loaded = serde_json::from_str::<Job>(&contents)
+                    .map_err(|e| anyhow::anyhow!("Failed to parse job JSON from {path}: {e}"))?;
+                // Sanitize: force clean initial state to prevent manipulation
+                loaded.state = State::Init;
+                loaded.retry_count = 0;
+                loaded.state_history.clear();
+                loaded.status = JobStatus::Pending;
+                loaded
             } else if let Some(desc) = description {
                 Job::new(
                     desc,

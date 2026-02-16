@@ -95,6 +95,13 @@ impl JobOrchestrator {
         if job.description.trim().is_empty() {
             bail!("Job description must not be empty");
         }
+        const MAX_DESCRIPTION_LEN: usize = 10_000;
+        if job.description.len() > MAX_DESCRIPTION_LEN {
+            bail!(
+                "Job description exceeds maximum length ({} > {MAX_DESCRIPTION_LEN})",
+                job.description.len()
+            );
+        }
         let t = StateMachine::next(job, JobOutcome::Success);
         if !matches!(t, Transition::Next(_)) {
             bail!("Unexpected transition from Init: {t:?}");
