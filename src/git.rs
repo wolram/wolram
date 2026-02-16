@@ -25,14 +25,9 @@ impl GitManager {
             ["*"].iter(),
             IndexAddOption::DEFAULT,
             Some(&mut |path: &std::path::Path, _: &[u8]| -> i32 {
-                let name = path
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("");
+                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
                 let excluded = ["wolram.toml", ".env", ".env.local"];
-                if excluded.iter().any(|e| name == *e)
-                    || name.ends_with(".key")
-                {
+                if excluded.contains(&name) || name.ends_with(".key") {
                     1 // skip
                 } else {
                     0 // add
@@ -50,15 +45,16 @@ impl GitManager {
             .or_else(|_| Signature::now("WOLRAM", "wolram@localhost"))?;
 
         let parent = self.repo.head()?.peel_to_commit()?;
-        let commit_oid =
-            self.repo
-                .commit(Some("HEAD"), &sig, &sig, message, &tree, &[&parent])?;
+        let commit_oid = self
+            .repo
+            .commit(Some("HEAD"), &sig, &sig, message, &tree, &[&parent])?;
 
         let short = &commit_oid.to_string()[..7];
         Ok(short.to_string())
     }
 
     /// Create and checkout a new branch from HEAD.
+    #[allow(dead_code)]
     pub fn create_branch(&self, name: &str) -> Result<()> {
         let head_commit = self.repo.head()?.peel_to_commit()?;
         self.repo.branch(name, &head_commit, false)?;
@@ -85,6 +81,7 @@ impl GitManager {
     }
 
     /// Create and checkout a branch named `wolram/<first-8-chars-of-job-id>`.
+    #[allow(dead_code)]
     pub fn create_job_branch(&self, job: &Job) -> Result<()> {
         let short_id = &job.id[..8.min(job.id.len())];
         let branch_name = format!("wolram/{short_id}");
@@ -134,7 +131,8 @@ mod tests {
         let mut index = repo.index().unwrap();
         let tree_oid = index.write_tree().unwrap();
         let tree = repo.find_tree(tree_oid).unwrap();
-        repo.commit(Some("HEAD"), &sig, &sig, "initial", &tree, &[]).unwrap();
+        repo.commit(Some("HEAD"), &sig, &sig, "initial", &tree, &[])
+            .unwrap();
 
         drop(tree);
         drop(repo);
