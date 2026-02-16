@@ -344,4 +344,17 @@ mod tests {
         assert_eq!(agent.skill, "refactoring");
         assert_eq!(agent.model, ModelTier::Haiku);
     }
+
+    #[tokio::test]
+    async fn orchestrator_rejects_oversized_description() {
+        let orch = JobOrchestrator::new(None, false);
+        let huge = "x".repeat(10_001);
+        let mut job = Job::new(huge, RetryConfig::default());
+        let result = orch.run_job(&mut job).await;
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("maximum length"),
+            "error should mention maximum length"
+        );
+    }
 }

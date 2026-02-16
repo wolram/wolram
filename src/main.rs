@@ -169,3 +169,28 @@ fn run_demo() {
     println!("\nAudit Record:");
     println!("{}", serde_json::to_string_pretty(&record).unwrap());
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn model_arg_to_tier_haiku() {
+        assert_eq!(model_arg_to_tier(ModelArg::Haiku), ModelTier::Haiku);
+    }
+
+    #[test]
+    fn model_arg_to_tier_sonnet() {
+        assert_eq!(model_arg_to_tier(ModelArg::Sonnet), ModelTier::Sonnet);
+    }
+
+    #[test]
+    fn model_arg_to_tier_opus() {
+        assert_eq!(model_arg_to_tier(ModelArg::Opus), ModelTier::Opus);
+    }
+
+    #[test]
+    fn run_demo_does_not_panic() {
+        run_demo();
+    }
+}
