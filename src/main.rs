@@ -7,7 +7,7 @@ mod router;
 mod state_machine;
 mod ui;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::Parser;
 
 use cli::{Cli, Command, ModelArg};
@@ -65,7 +65,10 @@ async fn main() -> Result<()> {
 
             if verbose {
                 eprintln!("Starting job: {} ({})", job.description, job.id);
-                eprintln!("Model override: {:?}, Max retries: {max_retries}", orch.model_override);
+                eprintln!(
+                    "Model override: {:?}, Max retries: {max_retries}",
+                    orch.model_override
+                );
             }
 
             let record = orch.run_job(&mut job).await?;
@@ -83,7 +86,14 @@ async fn main() -> Result<()> {
             println!("  Default model tier : {}", config.default_model_tier);
             println!("  Max retries        : {max_retries}");
             println!("  Base delay         : {} ms", config.base_delay_ms);
-            println!("  Config file        : {}", if std::path::Path::new("wolram.toml").exists() { "wolram.toml (loaded)" } else { "not found (using defaults)" });
+            println!(
+                "  Config file        : {}",
+                if std::path::Path::new("wolram.toml").exists() {
+                    "wolram.toml (loaded)"
+                } else {
+                    "not found (using defaults)"
+                }
+            );
             println!();
 
             // API key status.

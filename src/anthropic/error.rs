@@ -30,10 +30,7 @@ mod tests {
             status: 401,
             message: "Invalid API key".into(),
         };
-        assert_eq!(
-            err.to_string(),
-            "API error (status 401): Invalid API key"
-        );
+        assert_eq!(err.to_string(), "API error (status 401): Invalid API key");
     }
 
     #[test]

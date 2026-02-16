@@ -122,9 +122,7 @@ mod tests {
     async fn rate_limit_429_with_retry_after() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(
-                ResponseTemplate::new(429).insert_header("retry-after", "5"),
-            )
+            .respond_with(ResponseTemplate::new(429).insert_header("retry-after", "5"))
             .mount(&server)
             .await;
 
@@ -160,9 +158,7 @@ mod tests {
     async fn api_error_500() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(
-                ResponseTemplate::new(500).set_body_string("Internal Server Error"),
-            )
+            .respond_with(ResponseTemplate::new(500).set_body_string("Internal Server Error"))
             .mount(&server)
             .await;
 
