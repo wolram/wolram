@@ -119,6 +119,9 @@ pub struct Job {
     pub retry_config: RetryConfig,
     /// Agent configuration assigned during the DEFINE_AGENT phase.
     pub agent: Option<AgentConfig>,
+    /// LLM response text from the PROCESS phase (None in stub mode).
+    #[serde(default)]
+    pub llm_response: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -135,6 +138,7 @@ impl Job {
             retry_count: 0,
             retry_config,
             agent: None,
+            llm_response: None,
             created_at: now,
             updated_at: now,
         }
@@ -168,6 +172,9 @@ pub struct AuditRecord {
     pub max_retries: u32,
     /// Estimated cost in USD based on the model tier.
     pub cost_usd: f64,
+    /// LLM response text, if available.
+    #[serde(default)]
+    pub llm_response: Option<String>,
     pub started_at: DateTime<Utc>,
     pub completed_at: DateTime<Utc>,
     pub duration_ms: i64,
@@ -190,6 +197,7 @@ impl AuditRecord {
             retry_count: job.retry_count,
             max_retries: job.retry_config.max_retries,
             cost_usd: job.estimated_cost_usd(),
+            llm_response: job.llm_response.clone(),
             started_at: job.created_at,
             completed_at: now,
             duration_ms: duration.num_milliseconds(),

@@ -4,7 +4,7 @@ pub mod types;
 
 pub use client::AnthropicClient;
 pub use error::AnthropicError;
-pub use types::{Message, MessagesRequest, MessagesResponse, Usage};
+pub use types::{Message, MessagesRequest, MessagesResponse};
 
 /// Trait for sending messages to the Anthropic API (or a mock).
 pub trait MessageSender: Send + Sync {

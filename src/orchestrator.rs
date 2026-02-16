@@ -3,6 +3,7 @@ use tokio::time::sleep;
 use std::time::Duration;
 
 use crate::anthropic::{AnthropicClient, AnthropicError, Message, MessageSender, MessagesRequest};
+use crate::git::GitManager;
 use crate::router::{classify_with_llm, ModelSelector, SkillRouter};
 use crate::state_machine::{
     AuditRecord, FailureKind, Job, JobOutcome, JobStatus, ModelTier, StateMachine, Transition,
@@ -137,13 +138,23 @@ impl JobOrchestrator {
             }
         }
 
+        // Git integration: commit results if git is available
+        if self.has_git {
+            if let Ok(gm) = GitManager::open(std::path::Path::new(".")) {
+                if let Err(e) = gm.commit_job_result(job) {
+                    eprintln!("  Warning: git commit failed: {e}");
+                }
+            }
+        }
+
         // END: produce audit record
         let record = AuditRecord::from_job(job);
         Ok(record)
     }
 
     /// Execute the process phase. Uses the API client if available, otherwise simulates success.
-    async fn execute_process(&self, job: &Job) -> JobOutcome {
+    /// On success, stores the LLM response text in `job.llm_response`.
+    async fn execute_process(&self, job: &mut Job) -> JobOutcome {
         let client = match &self.client {
             Some(c) => c,
             None => return JobOutcome::Success, // stub mode
@@ -168,7 +179,17 @@ impl JobOrchestrator {
         };
 
         match client.send_message(&req).await {
-            Ok(_) => JobOutcome::Success,
+            Ok(response) => {
+                let text = response
+                    .content
+                    .iter()
+                    .filter(|b| b.content_type == "text")
+                    .map(|b| b.text.as_str())
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                job.llm_response = Some(text);
+                JobOutcome::Success
+            }
             Err(AnthropicError::RateLimited { .. }) => {
                 JobOutcome::Failure(FailureKind::System("Rate limited".into()))
             }
