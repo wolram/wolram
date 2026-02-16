@@ -116,6 +116,7 @@ mod tests {
         let tree = repo.find_tree(tree_oid).unwrap();
         repo.commit(Some("HEAD"), &sig, &sig, "initial", &tree, &[]).unwrap();
 
+        drop(tree);
         drop(repo);
         let gm = GitManager::open(tmp.path()).unwrap();
         (tmp, gm)
