@@ -73,7 +73,7 @@ async fn main() -> Result<()> {
 
             // Configuration.
             println!("Configuration:");
-            println!("  Default model tier : {model_tier}");
+            println!("  Default model tier : {}", config.default_model_tier);
             println!("  Max retries        : {max_retries}");
             println!("  Base delay         : {} ms", config.base_delay_ms);
             println!("  Config file        : {}", if std::path::Path::new("wolram.toml").exists() { "wolram.toml (loaded)" } else { "not found (using defaults)" });
