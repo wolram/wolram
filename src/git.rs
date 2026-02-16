@@ -2,6 +2,8 @@ use anyhow::{Context, Result};
 use git2::{IndexAddOption, Repository, Signature};
 use std::path::Path;
 
+use crate::state_machine::Job;
+
 pub struct GitManager {
     repo: Repository,
 }
@@ -48,6 +50,27 @@ impl GitManager {
         Ok(())
     }
 
+    /// Create a commit summarising the job result, returning the short hash.
+    ///
+    /// Commit message format: `wolram: [skill] description (status)`
+    pub fn commit_job_result(&self, job: &Job) -> Result<String> {
+        let skill = job
+            .agent
+            .as_ref()
+            .map(|a| a.skill.as_str())
+            .unwrap_or("unknown");
+        let status = format!("{:?}", job.status).to_lowercase();
+        let message = format!("wolram: [{}] {} ({})", skill, job.description, status);
+        self.commit(&message)
+    }
+
+    /// Create and checkout a branch named `wolram/<first-8-chars-of-job-id>`.
+    pub fn create_job_branch(&self, job: &Job) -> Result<()> {
+        let short_id = &job.id[..8.min(job.id.len())];
+        let branch_name = format!("wolram/{short_id}");
+        self.create_branch(&branch_name)
+    }
+
     /// Get the current branch name.
     pub fn current_branch(&self) -> Result<String> {
         let head = self.repo.head()?;
@@ -62,7 +85,10 @@ impl GitManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state_machine::{JobStatus, ModelTier, RetryConfig};
+    use std::fs;
     use std::path::PathBuf;
+    use tempfile::TempDir;
 
     #[test]
     fn open_fails_on_non_repo_path() {
@@ -76,5 +102,59 @@ mod tests {
         let gm = GitManager::open(&manifest_dir).expect("should open repo");
         let branch = gm.current_branch().expect("should get branch");
         assert!(!branch.is_empty());
+    }
+
+    /// Helper: create a temp repo with an initial commit so HEAD exists.
+    fn setup_temp_repo() -> (TempDir, GitManager) {
+        let tmp = TempDir::new().unwrap();
+        let repo = Repository::init(tmp.path()).unwrap();
+
+        // Create an initial commit so HEAD is valid.
+        let sig = Signature::now("test", "test@test.com").unwrap();
+        let mut index = repo.index().unwrap();
+        let tree_oid = index.write_tree().unwrap();
+        let tree = repo.find_tree(tree_oid).unwrap();
+        repo.commit(Some("HEAD"), &sig, &sig, "initial", &tree, &[]).unwrap();
+
+        drop(repo);
+        let gm = GitManager::open(tmp.path()).unwrap();
+        (tmp, gm)
+    }
+
+    #[test]
+    fn commit_job_result_creates_commit_with_job_info() {
+        let (tmp, gm) = setup_temp_repo();
+
+        // Write a file so there is something to commit.
+        fs::write(tmp.path().join("file.txt"), "hello").unwrap();
+
+        let mut job = Job::new("Add login page".into(), RetryConfig::default());
+        job.assign_agent("code_generation".to_string(), ModelTier::Sonnet);
+        job.status = JobStatus::Completed;
+
+        let hash = gm.commit_job_result(&job).unwrap();
+        assert_eq!(hash.len(), 7);
+    }
+
+    #[test]
+    fn commit_job_result_without_agent_uses_unknown_skill() {
+        let (tmp, gm) = setup_temp_repo();
+        fs::write(tmp.path().join("file.txt"), "data").unwrap();
+
+        let job = Job::new("Do something".into(), RetryConfig::default());
+        let hash = gm.commit_job_result(&job).unwrap();
+        assert_eq!(hash.len(), 7);
+    }
+
+    #[test]
+    fn create_job_branch_uses_first_8_chars_of_id() {
+        let (_tmp, gm) = setup_temp_repo();
+
+        let job = Job::new("Branch test".into(), RetryConfig::default());
+        let expected_branch = format!("wolram/{}", &job.id[..8]);
+
+        gm.create_job_branch(&job).unwrap();
+        let branch = gm.current_branch().unwrap();
+        assert_eq!(branch, expected_branch);
     }
 }

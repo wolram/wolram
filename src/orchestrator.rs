@@ -2,15 +2,16 @@ use anyhow::{bail, Result};
 use tokio::time::sleep;
 use std::time::Duration;
 
+use crate::anthropic::{AnthropicClient, AnthropicError, Message, MessagesRequest};
 use crate::router::{ModelSelector, SkillRouter};
 use crate::state_machine::{
-    AuditRecord, Job, JobOutcome, JobStatus, StateMachine, Transition,
+    AuditRecord, FailureKind, Job, JobOutcome, JobStatus, ModelTier, StateMachine, Transition,
 };
 
 /// Drives jobs through the full state machine lifecycle.
 pub struct JobOrchestrator {
-    /// Whether an Anthropic client is available for real API calls.
-    pub has_client: bool,
+    /// Optional Anthropic client for real API calls.
+    pub client: Option<AnthropicClient>,
     /// Whether git integration is available for auto-commits.
     pub has_git: bool,
 }
@@ -18,13 +19,27 @@ pub struct JobOrchestrator {
 impl Default for JobOrchestrator {
     fn default() -> Self {
         Self {
-            has_client: false,
+            client: None,
             has_git: false,
         }
     }
 }
 
+/// Map a `ModelTier` to the Anthropic API model identifier string.
+fn model_tier_to_api_string(tier: &ModelTier) -> &'static str {
+    match tier {
+        ModelTier::Haiku => "claude-haiku-4-5-20251001",
+        ModelTier::Sonnet => "claude-sonnet-4-5-20250929",
+        ModelTier::Opus => "claude-opus-4-6",
+    }
+}
+
 impl JobOrchestrator {
+    /// Create a new orchestrator with an optional Anthropic client.
+    pub fn new(client: Option<AnthropicClient>, has_git: bool) -> Self {
+        Self { client, has_git }
+    }
+
     /// Run a job through all state machine phases, returning an audit record.
     pub async fn run_job(&self, job: &mut Job) -> Result<AuditRecord> {
         // INIT: validate and mark in-progress
@@ -48,7 +63,7 @@ impl JobOrchestrator {
 
         // PROCESS: execute (with retry support)
         loop {
-            let outcome = self.execute_process(job);
+            let outcome = self.execute_process(job).await;
             let t = StateMachine::next(job, outcome);
             match t {
                 Transition::Next(_) => break,     // → End
@@ -70,13 +85,36 @@ impl JobOrchestrator {
     }
 
     /// Execute the process phase. Uses the API client if available, otherwise simulates success.
-    fn execute_process(&self, _job: &Job) -> JobOutcome {
-        if self.has_client {
-            // TODO: call Anthropic API when client module is available
-            JobOutcome::Success
-        } else {
-            // Simulate success
-            JobOutcome::Success
+    async fn execute_process(&self, job: &Job) -> JobOutcome {
+        let client = match &self.client {
+            Some(c) => c,
+            None => return JobOutcome::Success, // stub mode
+        };
+
+        let agent = match &job.agent {
+            Some(a) => a,
+            None => return JobOutcome::Failure(FailureKind::System("No agent assigned".into())),
+        };
+
+        let model = model_tier_to_api_string(&agent.model).to_string();
+        let req = MessagesRequest {
+            model,
+            max_tokens: 4096,
+            messages: vec![Message {
+                role: "user".into(),
+                content: format!(
+                    "You are an AI coding assistant. Please perform the following task:\n\n{}",
+                    job.description
+                ),
+            }],
+        };
+
+        match client.send_message(&req).await {
+            Ok(_) => JobOutcome::Success,
+            Err(AnthropicError::RateLimited { .. }) => {
+                JobOutcome::Failure(FailureKind::System("Rate limited".into()))
+            }
+            Err(e) => JobOutcome::Failure(FailureKind::System(e.to_string())),
         }
     }
 }
@@ -94,7 +132,7 @@ mod tests {
 
     #[tokio::test]
     async fn orchestrator_happy_path() {
-        let orch = JobOrchestrator::default();
+        let orch = JobOrchestrator::new(None, false);
         let mut job = Job::new("Implement the user profile page".into(), RetryConfig::default());
 
         let record = orch.run_job(&mut job).await.unwrap();
@@ -107,7 +145,7 @@ mod tests {
 
     #[tokio::test]
     async fn orchestrator_rejects_empty_description() {
-        let orch = JobOrchestrator::default();
+        let orch = JobOrchestrator::new(None, false);
         let mut job = Job::new("".into(), RetryConfig::default());
 
         let result = orch.run_job(&mut job).await;
@@ -116,7 +154,7 @@ mod tests {
 
     #[tokio::test]
     async fn orchestrator_assigns_correct_skill_and_model() {
-        let orch = JobOrchestrator::default();
+        let orch = JobOrchestrator::new(None, false);
         let mut job = Job::new(
             "Refactor the entire authentication module".into(),
             RetryConfig::default(),
@@ -130,7 +168,7 @@ mod tests {
 
     #[tokio::test]
     async fn orchestrator_records_state_transitions() {
-        let orch = JobOrchestrator::default();
+        let orch = JobOrchestrator::new(None, false);
         let mut job = Job::new("Write tests for the parser".into(), RetryConfig::default());
 
         let record = orch.run_job(&mut job).await.unwrap();
@@ -138,5 +176,12 @@ mod tests {
             record.state_transitions,
             vec![State::Init, State::DefineAgent, State::Process, State::End]
         );
+    }
+
+    #[test]
+    fn model_tier_mapping() {
+        assert_eq!(model_tier_to_api_string(&ModelTier::Haiku), "claude-haiku-4-5-20251001");
+        assert_eq!(model_tier_to_api_string(&ModelTier::Sonnet), "claude-sonnet-4-5-20250929");
+        assert_eq!(model_tier_to_api_string(&ModelTier::Opus), "claude-opus-4-6");
     }
 }
