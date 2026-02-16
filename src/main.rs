@@ -1,3 +1,5 @@
+mod anthropic;
+mod git;
 mod state_machine;
 
 use state_machine::{

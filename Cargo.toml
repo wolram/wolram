@@ -11,3 +11,8 @@ anyhow = "1"
 thiserror = "2"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
+git2 = "0.19"
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+clap = { version = "4", features = ["derive"] }
+toml = "0.8"
