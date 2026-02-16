@@ -24,10 +24,6 @@ async fn main() -> Result<()> {
 
     // Resolve effective values: CLI overrides > config > defaults.
     let max_retries = cli.max_retries.unwrap_or(config.max_retries);
-    let model_tier = cli
-        .model
-        .map(model_arg_to_tier)
-        .unwrap_or_else(|| parse_model_tier(&config.default_model_tier));
     let verbose = cli.verbose;
 
     match cli.command {
@@ -55,13 +51,14 @@ async fn main() -> Result<()> {
                 Some(anthropic::AnthropicClient::new(config.api_key.clone()))
             };
             let has_git = git::GitManager::open(std::path::Path::new(".")).is_ok();
-            let orch = JobOrchestrator::new(client, has_git);
+            let model_override = cli.model.map(model_arg_to_tier);
+            let orch = JobOrchestrator::with_model_override(client, has_git, model_override);
 
             let progress = ui::JobProgress::start(&job.description);
 
             if verbose {
                 eprintln!("Starting job: {} ({})", job.description, job.id);
-                eprintln!("Model: {model_tier}, Max retries: {max_retries}");
+                eprintln!("Model override: {:?}, Max retries: {max_retries}", orch.model_override);
             }
 
             let record = orch.run_job(&mut job).await?;
@@ -87,14 +84,6 @@ fn model_arg_to_tier(arg: ModelArg) -> ModelTier {
         ModelArg::Haiku => ModelTier::Haiku,
         ModelArg::Sonnet => ModelTier::Sonnet,
         ModelArg::Opus => ModelTier::Opus,
-    }
-}
-
-fn parse_model_tier(s: &str) -> ModelTier {
-    match s.to_lowercase().as_str() {
-        "haiku" => ModelTier::Haiku,
-        "opus" => ModelTier::Opus,
-        _ => ModelTier::Sonnet,
     }
 }
 

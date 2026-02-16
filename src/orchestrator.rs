@@ -2,8 +2,8 @@ use anyhow::{bail, Result};
 use tokio::time::sleep;
 use std::time::Duration;
 
-use crate::anthropic::{AnthropicClient, AnthropicError, Message, MessagesRequest};
-use crate::router::{ModelSelector, SkillRouter};
+use crate::anthropic::{AnthropicClient, AnthropicError, Message, MessageSender, MessagesRequest};
+use crate::router::{classify_with_llm, ModelSelector, SkillRouter};
 use crate::state_machine::{
     AuditRecord, FailureKind, Job, JobOutcome, JobStatus, ModelTier, StateMachine, Transition,
 };
@@ -14,6 +14,8 @@ pub struct JobOrchestrator {
     pub client: Option<AnthropicClient>,
     /// Whether git integration is available for auto-commits.
     pub has_git: bool,
+    /// Optional CLI model override — bypasses model selection when set.
+    pub model_override: Option<ModelTier>,
 }
 
 impl Default for JobOrchestrator {
@@ -21,6 +23,7 @@ impl Default for JobOrchestrator {
         Self {
             client: None,
             has_git: false,
+            model_override: None,
         }
     }
 }
@@ -34,10 +37,55 @@ fn model_tier_to_api_string(tier: &ModelTier) -> &'static str {
     }
 }
 
+/// Resolve skill and model using an LLM client with optional model override.
+/// Tries LLM classification first, falls back to keyword scoring on failure.
+pub async fn resolve_skill_and_model_with_client(
+    client: &impl MessageSender,
+    description: &str,
+    model_override: Option<ModelTier>,
+) -> (String, ModelTier) {
+    if let Ok((skill, llm_model)) = classify_with_llm(client, description).await {
+        let model = model_override.unwrap_or(llm_model);
+        return (skill, model);
+    }
+
+    // Fallback to keyword scoring
+    let skill = SkillRouter::route(description);
+    let model = model_override.unwrap_or_else(|| ModelSelector::select(description));
+    (skill, model)
+}
+
+/// Resolve skill and model using keyword scoring only (no LLM).
+fn resolve_skill_and_model_keywords(
+    description: &str,
+    model_override: Option<ModelTier>,
+) -> (String, ModelTier) {
+    let skill = SkillRouter::route(description);
+    let model = model_override.unwrap_or_else(|| ModelSelector::select(description));
+    (skill, model)
+}
+
 impl JobOrchestrator {
     /// Create a new orchestrator with an optional Anthropic client.
     pub fn new(client: Option<AnthropicClient>, has_git: bool) -> Self {
-        Self { client, has_git }
+        Self {
+            client,
+            has_git,
+            model_override: None,
+        }
+    }
+
+    /// Create a new orchestrator with a model override.
+    pub fn with_model_override(
+        client: Option<AnthropicClient>,
+        has_git: bool,
+        model_override: Option<ModelTier>,
+    ) -> Self {
+        Self {
+            client,
+            has_git,
+            model_override,
+        }
     }
 
     /// Run a job through all state machine phases, returning an audit record.
@@ -53,8 +101,11 @@ impl JobOrchestrator {
         }
 
         // DEFINE_AGENT: route skill and select model
-        let skill = SkillRouter::route(&job.description);
-        let model = ModelSelector::select(&job.description);
+        let (skill, model) = if let Some(client) = &self.client {
+            resolve_skill_and_model_with_client(client, &job.description, self.model_override.clone()).await
+        } else {
+            resolve_skill_and_model_keywords(&job.description, self.model_override.clone())
+        };
         job.assign_agent(skill, model);
         let t = StateMachine::next(job, JobOutcome::Success);
         if !matches!(t, Transition::Next(_)) {
@@ -183,5 +234,107 @@ mod tests {
         assert_eq!(model_tier_to_api_string(&ModelTier::Haiku), "claude-haiku-4-5-20251001");
         assert_eq!(model_tier_to_api_string(&ModelTier::Sonnet), "claude-sonnet-4-5-20250929");
         assert_eq!(model_tier_to_api_string(&ModelTier::Opus), "claude-opus-4-6");
+    }
+
+    #[tokio::test]
+    async fn orchestrator_model_override() {
+        let orch = JobOrchestrator::with_model_override(None, false, Some(ModelTier::Opus));
+        let mut job = Job::new("fix typo".into(), RetryConfig::default());
+
+        let record = orch.run_job(&mut job).await.unwrap();
+        let agent = record.agent.unwrap();
+        assert_eq!(agent.model, ModelTier::Opus);
+        assert_eq!(agent.skill, "bug_fix");
+    }
+
+    // --- Mock-based tests for resolve_skill_and_model_with_client ---
+
+    use crate::anthropic::types::{ContentBlock, Usage};
+    use crate::anthropic::{MessageSender, MessagesResponse};
+
+    struct MockClient {
+        response: Result<String, AnthropicError>,
+    }
+
+    impl MockClient {
+        fn ok(text: &str) -> Self {
+            Self { response: Ok(text.to_string()) }
+        }
+        fn err(e: AnthropicError) -> Self {
+            Self { response: Err(e) }
+        }
+    }
+
+    impl MessageSender for MockClient {
+        async fn send_message(
+            &self,
+            _req: &crate::anthropic::MessagesRequest,
+        ) -> Result<MessagesResponse, AnthropicError> {
+            match &self.response {
+                Ok(text) => Ok(MessagesResponse {
+                    id: "mock".into(),
+                    content: vec![ContentBlock {
+                        content_type: "text".into(),
+                        text: text.clone(),
+                    }],
+                    model: "mock".into(),
+                    stop_reason: Some("end_turn".into()),
+                    usage: Usage { input_tokens: 0, output_tokens: 0 },
+                }),
+                Err(_) => Err(AnthropicError::ApiError {
+                    status: 500,
+                    message: "mock error".to_string(),
+                }),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn resolve_with_llm_success() {
+        let client = MockClient::ok(r#"{"skill":"testing","complexity":"complex"}"#);
+        let (skill, model) = resolve_skill_and_model_with_client(&client, "anything", None).await;
+        assert_eq!(skill, "testing");
+        assert_eq!(model, ModelTier::Opus);
+    }
+
+    #[tokio::test]
+    async fn resolve_with_llm_fallback_on_error() {
+        let client = MockClient::err(AnthropicError::ApiError {
+            status: 500,
+            message: "fail".into(),
+        });
+        let (skill, model) = resolve_skill_and_model_with_client(&client, "fix typo", None).await;
+        assert_eq!(skill, "bug_fix");
+        assert_eq!(model, ModelTier::Haiku);
+    }
+
+    #[tokio::test]
+    async fn resolve_with_llm_and_model_override() {
+        let client = MockClient::ok(r#"{"skill":"documentation","complexity":"simple"}"#);
+        let (skill, model) = resolve_skill_and_model_with_client(&client, "write docs", Some(ModelTier::Opus)).await;
+        assert_eq!(skill, "documentation");
+        assert_eq!(model, ModelTier::Opus);
+    }
+
+    #[tokio::test]
+    async fn resolve_with_llm_invalid_json_fallback() {
+        let client = MockClient::ok("not valid json at all");
+        let (skill, model) = resolve_skill_and_model_with_client(&client, "fix typo", None).await;
+        assert_eq!(skill, "bug_fix");
+        assert_eq!(model, ModelTier::Haiku);
+    }
+
+    #[tokio::test]
+    async fn orchestrator_model_override_preserves_skill() {
+        let orch = JobOrchestrator::with_model_override(None, false, Some(ModelTier::Haiku));
+        let mut job = Job::new(
+            "Refactor the entire authentication module".into(),
+            RetryConfig::default(),
+        );
+
+        let record = orch.run_job(&mut job).await.unwrap();
+        let agent = record.agent.unwrap();
+        assert_eq!(agent.skill, "refactoring");
+        assert_eq!(agent.model, ModelTier::Haiku);
     }
 }
