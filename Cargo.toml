@@ -3,6 +3,9 @@ name = "wolram"
 version = "0.1.0"
 edition = "2024"
 description = "Enterprise-grade AI development orchestrator"
+license = "MIT"
+repository = "https://github.com/wolram/wolram"
+homepage = "https://wolram.com.br"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
