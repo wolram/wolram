@@ -1,14 +1,16 @@
-use anyhow::{bail, Result};
-use tokio::time::sleep;
+use anyhow::{Result, bail};
 use std::time::Duration;
+use tokio::time::sleep;
 
 use crate::anthropic::{AnthropicClient, AnthropicError, Message, MessageSender, MessagesRequest};
-use crate::router::{classify_with_llm, ModelSelector, SkillRouter};
+use crate::git::GitManager;
+use crate::router::{ModelSelector, SkillRouter, classify_with_llm};
 use crate::state_machine::{
     AuditRecord, FailureKind, Job, JobOutcome, JobStatus, ModelTier, StateMachine, Transition,
 };
 
 /// Drives jobs through the full state machine lifecycle.
+#[derive(Default)]
 pub struct JobOrchestrator {
     /// Optional Anthropic client for real API calls.
     pub client: Option<AnthropicClient>,
@@ -16,16 +18,6 @@ pub struct JobOrchestrator {
     pub has_git: bool,
     /// Optional CLI model override — bypasses model selection when set.
     pub model_override: Option<ModelTier>,
-}
-
-impl Default for JobOrchestrator {
-    fn default() -> Self {
-        Self {
-            client: None,
-            has_git: false,
-            model_override: None,
-        }
-    }
 }
 
 /// Map a `ModelTier` to the Anthropic API model identifier string.
@@ -67,6 +59,7 @@ fn resolve_skill_and_model_keywords(
 
 impl JobOrchestrator {
     /// Create a new orchestrator with an optional Anthropic client.
+    #[cfg(test)]
     pub fn new(client: Option<AnthropicClient>, has_git: bool) -> Self {
         Self {
             client,
@@ -95,6 +88,13 @@ impl JobOrchestrator {
         if job.description.trim().is_empty() {
             bail!("Job description must not be empty");
         }
+        const MAX_DESCRIPTION_LEN: usize = 10_000;
+        if job.description.len() > MAX_DESCRIPTION_LEN {
+            bail!(
+                "Job description exceeds maximum length ({} > {MAX_DESCRIPTION_LEN})",
+                job.description.len()
+            );
+        }
         let t = StateMachine::next(job, JobOutcome::Success);
         if !matches!(t, Transition::Next(_)) {
             bail!("Unexpected transition from Init: {t:?}");
@@ -102,9 +102,9 @@ impl JobOrchestrator {
 
         // DEFINE_AGENT: route skill and select model
         let (skill, model) = if let Some(client) = &self.client {
-            resolve_skill_and_model_with_client(client, &job.description, self.model_override.clone()).await
+            resolve_skill_and_model_with_client(client, &job.description, self.model_override).await
         } else {
-            resolve_skill_and_model_keywords(&job.description, self.model_override.clone())
+            resolve_skill_and_model_keywords(&job.description, self.model_override)
         };
         job.assign_agent(skill, model);
         let t = StateMachine::next(job, JobOutcome::Success);
@@ -117,10 +117,15 @@ impl JobOrchestrator {
             let outcome = self.execute_process(job).await;
             let t = StateMachine::next(job, outcome);
             match t {
-                Transition::Next(_) => break,     // → End
+                Transition::Next(_) => break, // → End
                 Transition::Retry { reason, .. } => {
                     let delay_ms = job.retry_config.delay_for_attempt(job.retry_count);
-                    log_retry(job.retry_count, job.retry_config.max_retries, &reason.to_string(), delay_ms);
+                    log_retry(
+                        job.retry_count,
+                        job.retry_config.max_retries,
+                        &reason.to_string(),
+                        delay_ms,
+                    );
                     sleep(Duration::from_millis(delay_ms)).await;
                 }
                 Transition::Complete(JobOutcome::Failure(kind)) => {
@@ -130,13 +135,22 @@ impl JobOrchestrator {
             }
         }
 
+        // Git integration: commit results if git is available
+        if self.has_git
+            && let Ok(gm) = GitManager::open(std::path::Path::new("."))
+            && let Err(e) = gm.commit_job_result(job)
+        {
+            eprintln!("  Warning: git commit failed: {e}");
+        }
+
         // END: produce audit record
         let record = AuditRecord::from_job(job);
         Ok(record)
     }
 
     /// Execute the process phase. Uses the API client if available, otherwise simulates success.
-    async fn execute_process(&self, job: &Job) -> JobOutcome {
+    /// On success, stores the LLM response text in `job.llm_response`.
+    async fn execute_process(&self, job: &mut Job) -> JobOutcome {
         let client = match &self.client {
             Some(c) => c,
             None => return JobOutcome::Success, // stub mode
@@ -161,7 +175,17 @@ impl JobOrchestrator {
         };
 
         match client.send_message(&req).await {
-            Ok(_) => JobOutcome::Success,
+            Ok(response) => {
+                let text = response
+                    .content
+                    .iter()
+                    .filter(|b| b.content_type == "text")
+                    .map(|b| b.text.as_str())
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                job.llm_response = Some(text);
+                JobOutcome::Success
+            }
             Err(AnthropicError::RateLimited { .. }) => {
                 JobOutcome::Failure(FailureKind::System("Rate limited".into()))
             }
@@ -171,9 +195,7 @@ impl JobOrchestrator {
 }
 
 fn log_retry(attempt: u32, max: u32, reason: &str, delay_ms: u64) {
-    eprintln!(
-        "  ↻ Retry {attempt}/{max}: {reason} (waiting {delay_ms}ms)"
-    );
+    eprintln!("  ↻ Retry {attempt}/{max}: {reason} (waiting {delay_ms}ms)");
 }
 
 #[cfg(test)]
@@ -184,7 +206,10 @@ mod tests {
     #[tokio::test]
     async fn orchestrator_happy_path() {
         let orch = JobOrchestrator::new(None, false);
-        let mut job = Job::new("Implement the user profile page".into(), RetryConfig::default());
+        let mut job = Job::new(
+            "Implement the user profile page".into(),
+            RetryConfig::default(),
+        );
 
         let record = orch.run_job(&mut job).await.unwrap();
 
@@ -231,9 +256,18 @@ mod tests {
 
     #[test]
     fn model_tier_mapping() {
-        assert_eq!(model_tier_to_api_string(&ModelTier::Haiku), "claude-haiku-4-5-20251001");
-        assert_eq!(model_tier_to_api_string(&ModelTier::Sonnet), "claude-sonnet-4-5-20250929");
-        assert_eq!(model_tier_to_api_string(&ModelTier::Opus), "claude-opus-4-6");
+        assert_eq!(
+            model_tier_to_api_string(&ModelTier::Haiku),
+            "claude-haiku-4-5-20251001"
+        );
+        assert_eq!(
+            model_tier_to_api_string(&ModelTier::Sonnet),
+            "claude-sonnet-4-5-20250929"
+        );
+        assert_eq!(
+            model_tier_to_api_string(&ModelTier::Opus),
+            "claude-opus-4-6"
+        );
     }
 
     #[tokio::test]
@@ -258,7 +292,9 @@ mod tests {
 
     impl MockClient {
         fn ok(text: &str) -> Self {
-            Self { response: Ok(text.to_string()) }
+            Self {
+                response: Ok(text.to_string()),
+            }
         }
         fn err(e: AnthropicError) -> Self {
             Self { response: Err(e) }
@@ -279,7 +315,10 @@ mod tests {
                     }],
                     model: "mock".into(),
                     stop_reason: Some("end_turn".into()),
-                    usage: Usage { input_tokens: 0, output_tokens: 0 },
+                    usage: Usage {
+                        input_tokens: 0,
+                        output_tokens: 0,
+                    },
                 }),
                 Err(_) => Err(AnthropicError::ApiError {
                     status: 500,
@@ -311,7 +350,8 @@ mod tests {
     #[tokio::test]
     async fn resolve_with_llm_and_model_override() {
         let client = MockClient::ok(r#"{"skill":"documentation","complexity":"simple"}"#);
-        let (skill, model) = resolve_skill_and_model_with_client(&client, "write docs", Some(ModelTier::Opus)).await;
+        let (skill, model) =
+            resolve_skill_and_model_with_client(&client, "write docs", Some(ModelTier::Opus)).await;
         assert_eq!(skill, "documentation");
         assert_eq!(model, ModelTier::Opus);
     }
@@ -336,5 +376,18 @@ mod tests {
         let agent = record.agent.unwrap();
         assert_eq!(agent.skill, "refactoring");
         assert_eq!(agent.model, ModelTier::Haiku);
+    }
+
+    #[tokio::test]
+    async fn orchestrator_rejects_oversized_description() {
+        let orch = JobOrchestrator::new(None, false);
+        let huge = "x".repeat(10_001);
+        let mut job = Job::new(huge, RetryConfig::default());
+        let result = orch.run_job(&mut job).await;
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("maximum length"),
+            "error should mention maximum length"
+        );
     }
 }

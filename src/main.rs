@@ -7,14 +7,15 @@ mod router;
 mod state_machine;
 mod ui;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::Parser;
 
 use cli::{Cli, Command, ModelArg};
 use config::WolramConfig;
 use orchestrator::JobOrchestrator;
 use state_machine::{
-    AuditRecord, Job, JobOutcome, ModelTier, RetryConfig, StateMachine, Transition,
+    AuditRecord, Job, JobOutcome, JobStatus, ModelTier, RetryConfig, State, StateMachine,
+    Transition,
 };
 
 #[tokio::main]
@@ -31,8 +32,14 @@ async fn main() -> Result<()> {
             let mut job = if let Some(path) = file {
                 let contents = std::fs::read_to_string(&path)
                     .map_err(|e| anyhow::anyhow!("Failed to read {path}: {e}"))?;
-                serde_json::from_str::<Job>(&contents)
-                    .map_err(|e| anyhow::anyhow!("Failed to parse job JSON from {path}: {e}"))?
+                let mut loaded = serde_json::from_str::<Job>(&contents)
+                    .map_err(|e| anyhow::anyhow!("Failed to parse job JSON from {path}: {e}"))?;
+                // Sanitize: force clean initial state to prevent manipulation
+                loaded.state = State::Init;
+                loaded.retry_count = 0;
+                loaded.state_history.clear();
+                loaded.status = JobStatus::Pending;
+                loaded
             } else if let Some(desc) = description {
                 Job::new(
                     desc,
@@ -58,7 +65,10 @@ async fn main() -> Result<()> {
 
             if verbose {
                 eprintln!("Starting job: {} ({})", job.description, job.id);
-                eprintln!("Model override: {:?}, Max retries: {max_retries}", orch.model_override);
+                eprintln!(
+                    "Model override: {:?}, Max retries: {max_retries}",
+                    orch.model_override
+                );
             }
 
             let record = orch.run_job(&mut job).await?;
@@ -73,10 +83,17 @@ async fn main() -> Result<()> {
 
             // Configuration.
             println!("Configuration:");
-            println!("  Default model tier : {model_tier}");
+            println!("  Default model tier : {}", config.default_model_tier);
             println!("  Max retries        : {max_retries}");
             println!("  Base delay         : {} ms", config.base_delay_ms);
-            println!("  Config file        : {}", if std::path::Path::new("wolram.toml").exists() { "wolram.toml (loaded)" } else { "not found (using defaults)" });
+            println!(
+                "  Config file        : {}",
+                if std::path::Path::new("wolram.toml").exists() {
+                    "wolram.toml (loaded)"
+                } else {
+                    "not found (using defaults)"
+                }
+            );
             println!();
 
             // API key status.
@@ -161,4 +178,29 @@ fn run_demo() {
     let record = AuditRecord::from_job(&job);
     println!("\nAudit Record:");
     println!("{}", serde_json::to_string_pretty(&record).unwrap());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn model_arg_to_tier_haiku() {
+        assert_eq!(model_arg_to_tier(ModelArg::Haiku), ModelTier::Haiku);
+    }
+
+    #[test]
+    fn model_arg_to_tier_sonnet() {
+        assert_eq!(model_arg_to_tier(ModelArg::Sonnet), ModelTier::Sonnet);
+    }
+
+    #[test]
+    fn model_arg_to_tier_opus() {
+        assert_eq!(model_arg_to_tier(ModelArg::Opus), ModelTier::Opus);
+    }
+
+    #[test]
+    fn run_demo_does_not_panic() {
+        run_demo();
+    }
 }

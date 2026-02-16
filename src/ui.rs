@@ -29,10 +29,12 @@ impl JobProgress {
         }
     }
 
+    #[allow(dead_code)]
     pub fn update_state(&self, state: State) {
         self.pb.set_message(format!("{state}"));
     }
 
+    #[allow(dead_code)]
     pub fn retry(&self, attempt: u32, max: u32, reason: &str) {
         self.pb.println(format!(
             "  {} Retry {attempt}/{max}: {reason}",

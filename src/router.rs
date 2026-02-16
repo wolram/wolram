@@ -148,7 +148,13 @@ pub async fn classify_with_llm(
     let classification: LlmClassification = serde_json::from_str(&text)
         .map_err(|e| anyhow::anyhow!("Failed to parse LLM classification: {e}"))?;
 
-    let valid_skills = ["testing", "refactoring", "documentation", "bug_fix", "code_generation"];
+    let valid_skills = [
+        "testing",
+        "refactoring",
+        "documentation",
+        "bug_fix",
+        "code_generation",
+    ];
     let skill = if valid_skills.contains(&classification.skill.as_str()) {
         classification.skill
     } else {
@@ -172,12 +178,18 @@ mod tests {
 
     #[test]
     fn route_testing() {
-        assert_eq!(SkillRouter::route("Write unit tests for the parser"), "testing");
+        assert_eq!(
+            SkillRouter::route("Write unit tests for the parser"),
+            "testing"
+        );
     }
 
     #[test]
     fn route_refactoring() {
-        assert_eq!(SkillRouter::route("Refactor the auth module"), "refactoring");
+        assert_eq!(
+            SkillRouter::route("Refactor the auth module"),
+            "refactoring"
+        );
     }
 
     #[test]
@@ -193,7 +205,10 @@ mod tests {
 
     #[test]
     fn route_default() {
-        assert_eq!(SkillRouter::route("Implement hero section layout"), "code_generation");
+        assert_eq!(
+            SkillRouter::route("Implement hero section layout"),
+            "code_generation"
+        );
     }
 
     #[test]
@@ -213,17 +228,26 @@ mod tests {
 
     #[test]
     fn route_clean_up_routes_to_refactoring() {
-        assert_eq!(SkillRouter::route("Clean up the utils module"), "refactoring");
+        assert_eq!(
+            SkillRouter::route("Clean up the utils module"),
+            "refactoring"
+        );
     }
 
     #[test]
     fn route_create_routes_to_code_generation() {
-        assert_eq!(SkillRouter::route("Create a new user service"), "code_generation");
+        assert_eq!(
+            SkillRouter::route("Create a new user service"),
+            "code_generation"
+        );
     }
 
     #[test]
     fn route_no_keywords_defaults() {
-        assert_eq!(SkillRouter::route("something completely unrelated"), "code_generation");
+        assert_eq!(
+            SkillRouter::route("something completely unrelated"),
+            "code_generation"
+        );
     }
 
     // --- ModelSelector tests ---
@@ -231,7 +255,10 @@ mod tests {
     #[test]
     fn select_haiku_for_simple() {
         assert_eq!(ModelSelector::select("rename variable"), ModelTier::Haiku);
-        assert_eq!(ModelSelector::select("fix typo in readme"), ModelTier::Haiku);
+        assert_eq!(
+            ModelSelector::select("fix typo in readme"),
+            ModelTier::Haiku
+        );
         assert_eq!(ModelSelector::select("format code"), ModelTier::Haiku);
     }
 
@@ -285,9 +312,9 @@ mod tests {
 
     // --- MockClient for classify_with_llm tests ---
 
+    use crate::anthropic::MessageSender;
     use crate::anthropic::error::AnthropicError;
     use crate::anthropic::types::{ContentBlock, MessagesResponse, Usage};
-    use crate::anthropic::MessageSender;
 
     struct MockClient {
         result: Result<String, AnthropicError>,
@@ -335,7 +362,9 @@ mod tests {
     #[tokio::test]
     async fn classify_with_llm_valid_response() {
         let client = MockClient::ok(r#"{"skill":"bug_fix","complexity":"simple"}"#);
-        let (skill, tier) = classify_with_llm(&client, "fix the login bug").await.unwrap();
+        let (skill, tier) = classify_with_llm(&client, "fix the login bug")
+            .await
+            .unwrap();
         assert_eq!(skill, "bug_fix");
         assert_eq!(tier, ModelTier::Haiku);
     }

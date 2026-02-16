@@ -58,10 +58,10 @@ impl WolramConfig {
         };
 
         // Env var overrides config file for API key.
-        if let Ok(key) = std::env::var("ANTHROPIC_API_KEY") {
-            if !key.is_empty() {
-                config.api_key = key;
-            }
+        if let Ok(key) = std::env::var("ANTHROPIC_API_KEY")
+            && !key.is_empty()
+        {
+            config.api_key = key;
         }
 
         Ok(config)
