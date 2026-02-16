@@ -68,7 +68,38 @@ async fn main() -> Result<()> {
         }
 
         Command::Status => {
-            println!("Status tracking not yet implemented");
+            println!("WOLRAM — Status");
+            println!();
+
+            // Configuration.
+            println!("Configuration:");
+            println!("  Default model tier : {model_tier}");
+            println!("  Max retries        : {max_retries}");
+            println!("  Base delay         : {} ms", config.base_delay_ms);
+            println!("  Config file        : {}", if std::path::Path::new("wolram.toml").exists() { "wolram.toml (loaded)" } else { "not found (using defaults)" });
+            println!();
+
+            // API key status.
+            println!("Anthropic API:");
+            if config.api_key.is_empty() {
+                println!("  API key : not configured (jobs will run in stub mode)");
+            } else {
+                println!("  API key : configured");
+            }
+            println!();
+
+            // Git status.
+            println!("Git:");
+            match git::GitManager::open(std::path::Path::new(".")) {
+                Ok(gm) => {
+                    let branch = gm.current_branch().unwrap_or_else(|_| "unknown".into());
+                    println!("  Repository : detected");
+                    println!("  Branch     : {branch}");
+                }
+                Err(_) => {
+                    println!("  Repository : not detected");
+                }
+            }
         }
 
         Command::Demo => {

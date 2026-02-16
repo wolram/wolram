@@ -39,7 +39,7 @@ pub enum Command {
         file: Option<String>,
     },
 
-    /// Show current orchestrator status (placeholder).
+    /// Show current orchestrator status.
     Status,
 
     /// Run the built-in state machine demo.
