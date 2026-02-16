@@ -1,11 +1,18 @@
+//! Roteamento de habilidades e seleção de modelo para jobs do WOLRAM.
+//!
+//! Contém o [`SkillRouter`] (atribuição por pontuação de palavras-chave),
+//! o [`ModelSelector`] (seleção de tier por complexidade) e a função
+//! [`classify_with_llm`] para classificação opcional via chamada a um LLM.
+
 use crate::anthropic::{Message, MessageSender, MessagesRequest};
 use crate::state_machine::ModelTier;
 
-/// Routes a job description to an appropriate skill/agent type using weighted keyword scoring.
+/// Roteia uma descrição de job para o tipo de habilidade/agente apropriado
+/// usando pontuação ponderada de palavras-chave.
 pub struct SkillRouter;
 
 impl SkillRouter {
-    /// Weighted keyword-based skill assignment from a job description.
+    /// Atribuição de habilidade baseada em palavras-chave ponderadas a partir da descrição do job.
     pub fn route(description: &str) -> String {
         let lower = description.to_lowercase();
 
@@ -42,11 +49,11 @@ impl SkillRouter {
     }
 }
 
-/// Selects a model tier based on task complexity inferred from the description.
+/// Seleciona um nível de modelo baseado na complexidade da tarefa inferida da descrição.
 pub struct ModelSelector;
 
 impl ModelSelector {
-    /// Complexity-based model selection using weighted keyword scoring.
+    /// Seleção de modelo baseada em complexidade usando pontuação ponderada de palavras-chave.
     pub fn select(description: &str) -> ModelTier {
         let lower = description.to_lowercase();
 
@@ -84,7 +91,7 @@ impl ModelSelector {
             }
         }
 
-        // Length heuristic
+        // Heurística de comprimento: descrições curtas tendem a ser simples.
         if description.len() < 20 {
             simple_score += 5;
         }
@@ -92,7 +99,7 @@ impl ModelSelector {
             complex_score += 5;
         }
 
-        // Word count heuristic
+        // Heurística de contagem de palavras: muitas palavras indicam complexidade.
         let word_count = description.split_whitespace().count();
         if word_count > 15 {
             complex_score += 3;
@@ -108,15 +115,17 @@ impl ModelSelector {
     }
 }
 
-/// Classification result from LLM-based routing.
+/// Resultado da classificação via roteamento baseado em LLM.
 #[derive(Debug, serde::Deserialize)]
 struct LlmClassification {
     skill: String,
     complexity: String,
 }
 
-/// Classify a job description using a Haiku LLM call.
-/// Returns (skill, model_tier) or an error if the call fails.
+/// Classifica uma descrição de job usando uma chamada LLM ao Haiku.
+///
+/// Retorna `(habilidade, nível_de_modelo)` ou um erro se a chamada falhar.
+/// Em caso de falha, o chamador deve recorrer à pontuação por palavras-chave.
 pub async fn classify_with_llm(
     client: &impl MessageSender,
     description: &str,
@@ -145,9 +154,11 @@ pub async fn classify_with_llm(
         .map(|b| b.text.trim().to_string())
         .unwrap_or_default();
 
+    // Faz o parsing do JSON retornado pelo LLM.
     let classification: LlmClassification = serde_json::from_str(&text)
         .map_err(|e| anyhow::anyhow!("Failed to parse LLM classification: {e}"))?;
 
+    // Valida a habilidade retornada contra a lista de habilidades conhecidas.
     let valid_skills = [
         "testing",
         "refactoring",
@@ -161,6 +172,7 @@ pub async fn classify_with_llm(
         "code_generation".to_string()
     };
 
+    // Mapeia a complexidade para o nível de modelo correspondente.
     let model = match classification.complexity.as_str() {
         "simple" => ModelTier::Haiku,
         "complex" => ModelTier::Opus,
@@ -174,7 +186,7 @@ pub async fn classify_with_llm(
 mod tests {
     use super::*;
 
-    // --- SkillRouter tests ---
+    // --- Testes do SkillRouter ---
 
     #[test]
     fn route_testing() {
@@ -214,7 +226,7 @@ mod tests {
     #[test]
     fn route_multi_keyword_picks_highest() {
         // "fix" → bug_fix(10), "bug" → bug_fix(10), "test" → testing(10)
-        // bug_fix = 20, testing = 10 → bug_fix wins
+        // bug_fix = 20, testing = 10 → bug_fix vence
         assert_eq!(
             SkillRouter::route("fix the bug in the test suite"),
             "bug_fix"
@@ -250,7 +262,7 @@ mod tests {
         );
     }
 
-    // --- ModelSelector tests ---
+    // --- Testes do ModelSelector ---
 
     #[test]
     fn select_haiku_for_simple() {
@@ -303,14 +315,14 @@ mod tests {
 
     #[test]
     fn select_word_count_boosts_complex() {
-        // >15 words adds +3 complex, >100 chars adds +5 complex
+        // >15 palavras adiciona +3 complexo, >100 chars adiciona +5 complexo
         let desc = "please carefully plan and then implement the new thing for the app with all the details and edge cases handled";
         let tier = ModelSelector::select(desc);
-        // This has >15 words and >100 chars → complex gets +8 boost, no keywords → Opus
+        // Tem >15 palavras e >100 chars → complexo recebe +8, sem keywords → Opus
         assert_eq!(tier, ModelTier::Opus);
     }
 
-    // --- MockClient for classify_with_llm tests ---
+    // --- MockClient para testes de classify_with_llm ---
 
     use crate::anthropic::MessageSender;
     use crate::anthropic::error::AnthropicError;
@@ -410,7 +422,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    // --- LLM classification JSON parsing test ---
+    // --- Teste de parsing JSON da classificação LLM ---
 
     #[test]
     fn parse_llm_classification_json() {
@@ -422,7 +434,7 @@ mod tests {
 
     #[test]
     fn parse_llm_classification_maps_complexity() {
-        // Verify the mapping logic
+        // Verifica a lógica de mapeamento
         assert_eq!(
             match "simple" {
                 "simple" => ModelTier::Haiku,

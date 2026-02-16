@@ -1,24 +1,30 @@
+//! Integração com Git via libgit2 para commits automáticos e gerenciamento de branches.
+//!
+//! O [`GitManager`] encapsula operações como commit de resultados de jobs,
+//! criação de branches e consulta da branch atual.
+
 use anyhow::{Context, Result};
 use git2::{IndexAddOption, Repository, Signature};
 use std::path::Path;
 
 use crate::state_machine::Job;
 
+/// Gerenciador de operações Git usando a biblioteca libgit2.
 pub struct GitManager {
     repo: Repository,
 }
 
 impl GitManager {
-    /// Open an existing git repository at the given path.
+    /// Abre um repositório git existente no caminho fornecido.
     pub fn open(path: &Path) -> Result<Self> {
         let repo = Repository::open(path).context("failed to open git repository")?;
         Ok(Self { repo })
     }
 
-    /// Stage all changes and create a commit, returning the short hash.
+    /// Adiciona todas as alterações ao stage e cria um commit, retornando o hash curto.
     ///
-    /// Sensitive files (wolram.toml, .env, .env.local, *.key) are excluded
-    /// from staging to prevent accidental exposure of secrets.
+    /// Arquivos sensíveis (wolram.toml, .env, .env.local, *.key) são excluídos
+    /// do staging para evitar exposição acidental de segredos.
     pub fn commit(&self, message: &str) -> Result<String> {
         let mut index = self.repo.index()?;
         index.add_all(
@@ -26,11 +32,12 @@ impl GitManager {
             IndexAddOption::DEFAULT,
             Some(&mut |path: &std::path::Path, _: &[u8]| -> i32 {
                 let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                // Arquivos excluídos do staging por segurança.
                 let excluded = ["wolram.toml", ".env", ".env.local"];
                 if excluded.contains(&name) || name.ends_with(".key") {
-                    1 // skip
+                    1 // pular
                 } else {
-                    0 // add
+                    0 // adicionar
                 }
             }),
         )?;
@@ -53,7 +60,7 @@ impl GitManager {
         Ok(short.to_string())
     }
 
-    /// Create and checkout a new branch from HEAD.
+    /// Cria e faz checkout de uma nova branch a partir do HEAD.
     #[allow(dead_code)]
     pub fn create_branch(&self, name: &str) -> Result<()> {
         let head_commit = self.repo.head()?.peel_to_commit()?;
@@ -66,9 +73,9 @@ impl GitManager {
         Ok(())
     }
 
-    /// Create a commit summarising the job result, returning the short hash.
+    /// Cria um commit resumindo o resultado do job, retornando o hash curto.
     ///
-    /// Commit message format: `wolram: [skill] description (status)`
+    /// Formato da mensagem de commit: `wolram: [skill] descrição (status)`
     pub fn commit_job_result(&self, job: &Job) -> Result<String> {
         let skill = job
             .agent
@@ -80,7 +87,7 @@ impl GitManager {
         self.commit(&message)
     }
 
-    /// Create and checkout a branch named `wolram/<first-8-chars-of-job-id>`.
+    /// Cria e faz checkout de uma branch com nome `wolram/<8-primeiros-chars-do-id>`.
     #[allow(dead_code)]
     pub fn create_job_branch(&self, job: &Job) -> Result<()> {
         let short_id = &job.id[..8.min(job.id.len())];
@@ -88,7 +95,7 @@ impl GitManager {
         self.create_branch(&branch_name)
     }
 
-    /// Get the current branch name.
+    /// Retorna o nome da branch atual.
     pub fn current_branch(&self) -> Result<String> {
         let head = self.repo.head()?;
         let name = head
@@ -121,12 +128,12 @@ mod tests {
         assert!(!branch.is_empty());
     }
 
-    /// Helper: create a temp repo with an initial commit so HEAD exists.
+    /// Auxiliar: cria um repositório temporário com um commit inicial para que HEAD exista.
     fn setup_temp_repo() -> (TempDir, GitManager) {
         let tmp = TempDir::new().unwrap();
         let repo = Repository::init(tmp.path()).unwrap();
 
-        // Create an initial commit so HEAD is valid.
+        // Cria um commit inicial para que HEAD seja válido.
         let sig = Signature::now("test", "test@test.com").unwrap();
         let mut index = repo.index().unwrap();
         let tree_oid = index.write_tree().unwrap();
@@ -144,7 +151,7 @@ mod tests {
     fn commit_job_result_creates_commit_with_job_info() {
         let (tmp, gm) = setup_temp_repo();
 
-        // Write a file so there is something to commit.
+        // Escreve um arquivo para ter algo a commitar.
         fs::write(tmp.path().join("file.txt"), "hello").unwrap();
 
         let mut job = Job::new("Add login page".into(), RetryConfig::default());

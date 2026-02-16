@@ -1,48 +1,57 @@
+//! Interface de linha de comando do WOLRAM baseada em clap.
+//!
+//! Define a struct [`Cli`] com subcomandos [`Command`] (run, demo, status)
+//! e flags globais (--model, --max-retries, --verbose).
+
 use clap::{Parser, Subcommand, ValueEnum};
 
-/// WOLRAM — Enterprise-grade AI development orchestrator.
+/// WOLRAM — Orquestrador de desenvolvimento IA de nível empresarial.
 #[derive(Debug, Parser)]
 #[command(name = "wolram", version, about)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
 
-    /// Model tier to use for this session.
+    /// Nível de modelo a usar nesta sessão.
     #[arg(long, global = true)]
     pub model: Option<ModelArg>,
 
-    /// Maximum number of retries on failure.
+    /// Número máximo de retentativas em caso de falha.
     #[arg(long, global = true)]
     pub max_retries: Option<u32>,
 
-    /// Enable verbose output.
+    /// Habilita saída detalhada (verbose).
     #[arg(long, short, global = true, default_value_t = false)]
     pub verbose: bool,
 }
 
+/// Argumento de modelo aceito pela CLI, mapeado para [`ModelTier`](crate::state_machine::ModelTier) internamente.
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum ModelArg {
+    /// Modelo rápido e econômico para tarefas simples.
     Haiku,
+    /// Modelo equilibrado para tarefas de complexidade média.
     Sonnet,
+    /// Modelo mais capaz para tarefas complexas.
     Opus,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Run a job with the given description.
+    /// Executa um job com a descrição fornecida.
     Run {
-        /// Job description (what to build/fix/refactor).
+        /// Descrição do job (o que construir/corrigir/refatorar).
         description: Option<String>,
 
-        /// Path to a JSON or TOML file containing job definitions.
+        /// Caminho para um arquivo JSON ou TOML contendo definições de job.
         #[arg(long)]
         file: Option<String>,
     },
 
-    /// Show current orchestrator status.
+    /// Mostra o status atual do orquestrador.
     Status,
 
-    /// Run the built-in state machine demo.
+    /// Executa a demonstração embutida da máquina de estados.
     Demo,
 }
 

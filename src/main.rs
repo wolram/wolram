@@ -1,3 +1,22 @@
+//! # WOLRAM
+//!
+//! Camada de orquestração de nível empresarial para desenvolvimento assistido por IA.
+//!
+//! Aplica padrões de máquina de estados no estilo REFramework (inspirado pelo
+//! Robotic Enterprise Framework da UiPath) a fluxos de trabalho de codificação com LLM,
+//! com roteamento inteligente de modelos/habilidades, lógica de retentativa e
+//! trilha de auditoria completa.
+//!
+//! ## Uso
+//!
+//! ```bash
+//! wolram run "implementar página de login"   # Executa um job
+//! wolram demo                                 # Demo da máquina de estados
+//! wolram status                               # Mostra status do orquestrador
+//! ```
+
+#![warn(missing_docs)]
+
 mod anthropic;
 mod cli;
 mod config;
@@ -23,7 +42,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     let config = WolramConfig::load()?;
 
-    // Resolve effective values: CLI overrides > config > defaults.
+    // Resolve valores efetivos: CLI overrides > config > defaults.
     let max_retries = cli.max_retries.unwrap_or(config.max_retries);
     let verbose = cli.verbose;
 
@@ -34,7 +53,7 @@ async fn main() -> Result<()> {
                     .map_err(|e| anyhow::anyhow!("Failed to read {path}: {e}"))?;
                 let mut loaded = serde_json::from_str::<Job>(&contents)
                     .map_err(|e| anyhow::anyhow!("Failed to parse job JSON from {path}: {e}"))?;
-                // Sanitize: force clean initial state to prevent manipulation
+                // Sanitiza: força estado inicial limpo para prevenir manipulação.
                 loaded.state = State::Init;
                 loaded.retry_count = 0;
                 loaded.state_history.clear();
@@ -81,7 +100,7 @@ async fn main() -> Result<()> {
             println!("WOLRAM — Status");
             println!();
 
-            // Configuration.
+            // Configuração.
             println!("Configuration:");
             println!("  Default model tier : {}", config.default_model_tier);
             println!("  Max retries        : {max_retries}");
@@ -96,7 +115,7 @@ async fn main() -> Result<()> {
             );
             println!();
 
-            // API key status.
+            // Status da chave API.
             println!("Anthropic API:");
             if config.api_key.is_empty() {
                 println!("  API key : not configured (jobs will run in stub mode)");
@@ -105,7 +124,7 @@ async fn main() -> Result<()> {
             }
             println!();
 
-            // Git status.
+            // Status do Git.
             println!("Git:");
             match git::GitManager::open(std::path::Path::new(".")) {
                 Ok(gm) => {
@@ -127,6 +146,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+/// Converte um argumento de modelo da CLI ([`ModelArg`]) para o tipo interno [`ModelTier`].
 fn model_arg_to_tier(arg: ModelArg) -> ModelTier {
     match arg {
         ModelArg::Haiku => ModelTier::Haiku,
@@ -135,6 +155,11 @@ fn model_arg_to_tier(arg: ModelArg) -> ModelTier {
     }
 }
 
+/// Executa a demonstração embutida da máquina de estados.
+///
+/// Cria um job de exemplo e o conduz por todos os estados
+/// (INIT → DEFINE_AGENT → PROCESS → END), imprimindo cada transição
+/// e o registro de auditoria final.
 fn run_demo() {
     let mut job = Job::new(
         "Example: implement hero section layout".to_string(),
@@ -149,7 +174,7 @@ fn run_demo() {
     StateMachine::next(&mut job, JobOutcome::Success);
     println!("  → Transitioned to {}", job.state);
 
-    // Simulate agent assignment during DEFINE_AGENT phase.
+    // Simula atribuição de agente durante a fase DEFINE_AGENT.
     job.assign_agent("code_generation".to_string(), ModelTier::Sonnet);
     println!(
         "  ✦ Assigned agent: skill={}, model={}, est. cost=${:.3}",
@@ -158,7 +183,7 @@ fn run_demo() {
         job.estimated_cost_usd(),
     );
 
-    // Walk through remaining states.
+    // Percorre os estados restantes.
     let outcomes = [JobOutcome::Success, JobOutcome::Success];
 
     for outcome in outcomes {
