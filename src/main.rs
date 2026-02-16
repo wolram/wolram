@@ -5,6 +5,7 @@ mod git;
 mod orchestrator;
 mod router;
 mod state_machine;
+mod ui;
 
 use anyhow::{bail, Result};
 use clap::Parser;
@@ -53,7 +54,10 @@ async fn main() -> Result<()> {
             } else {
                 Some(anthropic::AnthropicClient::new(config.api_key.clone()))
             };
-            let orch = JobOrchestrator::new(client, false);
+            let has_git = git::GitManager::open(std::path::Path::new(".")).is_ok();
+            let orch = JobOrchestrator::new(client, has_git);
+
+            let progress = ui::JobProgress::start(&job.description);
 
             if verbose {
                 eprintln!("Starting job: {} ({})", job.description, job.id);
@@ -62,11 +66,8 @@ async fn main() -> Result<()> {
 
             let record = orch.run_job(&mut job).await?;
 
-            if verbose {
-                eprintln!("State transitions: {:?}", record.state_transitions);
-            }
-
-            println!("{}", serde_json::to_string_pretty(&record)?);
+            progress.complete(&state_machine::JobOutcome::Success);
+            progress.print_audit(&record);
         }
 
         Command::Status => {

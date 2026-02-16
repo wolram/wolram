@@ -50,13 +50,21 @@ impl WolramConfig {
     /// Falls back to defaults if the file doesn't exist.
     pub fn load() -> Result<Self> {
         let path = Path::new("wolram.toml");
-        if path.exists() {
+        let mut config = if path.exists() {
             let contents = std::fs::read_to_string(path)?;
-            let config: WolramConfig = toml::from_str(&contents)?;
-            Ok(config)
+            toml::from_str::<WolramConfig>(&contents)?
         } else {
-            Ok(Self::default())
+            Self::default()
+        };
+
+        // Env var overrides config file for API key.
+        if let Ok(key) = std::env::var("ANTHROPIC_API_KEY") {
+            if !key.is_empty() {
+                config.api_key = key;
+            }
         }
+
+        Ok(config)
     }
 }
 
