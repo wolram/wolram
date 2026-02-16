@@ -1,0 +1,13 @@
+# WOLRAM Configuration
+# Copy to wolram.toml and set your values.
+# Environment variables override these settings.
+
+# Anthropic API key (or set ANTHROPIC_API_KEY env var)
+# api_key = "sk-ant-..."
+
+# Default model for job execution (or set WOLRAM_MODEL env var)
+# Options: claude-haiku-4-5-20251001, claude-sonnet-4-5-20250929, claude-opus-4-6
+# default_model = "claude-sonnet-4-5-20250929"
+
+# Maximum retry attempts per job
+# max_retries = 3

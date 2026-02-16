@@ -1,0 +1,36 @@
+[package]
+name = "wolram"
+version = "0.1.0"
+edition = "2024"
+description = "Enterprise-grade orchestration for AI-assisted development"
+license = "MIT"
+
+[dependencies]
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP client (for Anthropic API)
+reqwest = { version = "0.12", features = ["json"] }
+
+# Terminal UI
+indicatif = "0.17"
+console = "0.15"
+
+# Git operations
+git2 = "0.19"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Utilities
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
