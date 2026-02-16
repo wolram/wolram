@@ -57,7 +57,7 @@ cargo build                        # Compile
 cargo run -- demo                  # Run the built-in state machine demo
 cargo run -- run "implement X"     # Run a single job (stub mode without API key)
 cargo run -- run --model opus "fix the typo"  # Force Opus model
-cargo test                         # Run all tests (62 tests)
+cargo test                         # Run all tests (80 tests)
 ```
 
 Set `ANTHROPIC_API_KEY` to enable real API calls and LLM-based classification; otherwise jobs run in stub mode.
@@ -97,7 +97,7 @@ WOLRAM uses a layered routing strategy during the DEFINE_AGENT phase:
 - [x] Audit trail with timestamp, model, cost tracking
 - [x] LLM-based job classification with keyword fallback
 - [x] CLI model override (`--model` flag)
-- [ ] CI/CD pipeline via GitHub Actions
+- [x] CI/CD pipeline via GitHub Actions
 - [ ] Web interface (wolram.com.br)
 
 ## Tech Stack
