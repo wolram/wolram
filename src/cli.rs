@@ -51,6 +51,12 @@ pub enum Command {
     /// Mostra o status atual do orquestrador.
     Status,
 
+    /// Generates a TODO list from a natural language prompt.
+    Todo {
+        /// Natural language description of what needs to be done.
+        prompt: String,
+    },
+
     /// Executa a demonstração embutida da máquina de estados.
     Demo,
 }
@@ -86,6 +92,17 @@ mod tests {
         assert!(cli.verbose);
         assert!(matches!(cli.model, Some(ModelArg::Opus)));
         assert_eq!(cli.max_retries, Some(5));
+    }
+
+    #[test]
+    fn cli_parses_todo_subcommand() {
+        let cli = Cli::parse_from(["wolram", "todo", "implement auth and add tests"]);
+        match cli.command {
+            Command::Todo { prompt } => {
+                assert_eq!(prompt, "implement auth and add tests");
+            }
+            _ => panic!("expected Todo command"),
+        }
     }
 
     #[test]

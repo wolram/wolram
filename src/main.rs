@@ -24,6 +24,7 @@ mod git;
 mod orchestrator;
 mod router;
 mod state_machine;
+mod todo;
 mod ui;
 
 use anyhow::{Result, bail};
@@ -138,6 +139,29 @@ async fn main() -> Result<()> {
             }
         }
 
+        Command::Todo { prompt } => {
+            if prompt.trim().is_empty() {
+                bail!("TODO prompt must not be empty");
+            }
+
+            let todos = if !config.api_key.is_empty() {
+                let client = anthropic::AnthropicClient::new(config.api_key.clone());
+                match todo::TodoGenerator::generate_with_llm(&client, &prompt).await {
+                    Ok(items) => items,
+                    Err(e) => {
+                        if verbose {
+                            eprintln!("LLM TODO generation failed ({e}), using keyword fallback");
+                        }
+                        todo::TodoGenerator::generate_from_keywords(&prompt)
+                    }
+                }
+            } else {
+                todo::TodoGenerator::generate_from_keywords(&prompt)
+            };
+
+            print_todos(&todos);
+        }
+
         Command::Demo => {
             run_demo();
         }
@@ -153,6 +177,39 @@ fn model_arg_to_tier(arg: ModelArg) -> ModelTier {
         ModelArg::Sonnet => ModelTier::Sonnet,
         ModelArg::Opus => ModelTier::Opus,
     }
+}
+
+/// Prints a formatted TODO list to stdout.
+fn print_todos(todos: &[state_machine::TodoItem]) {
+    use console::Style;
+
+    let high = Style::new().red().bold();
+    let medium = Style::new().yellow();
+    let low = Style::new().dim();
+
+    println!("WOLRAM — Generated TODOs");
+    println!();
+
+    for item in todos {
+        let priority_badge = match item.priority {
+            state_machine::Priority::High => high.apply_to("[HIGH]").to_string(),
+            state_machine::Priority::Medium => medium.apply_to("[MED]").to_string(),
+            state_machine::Priority::Low => low.apply_to("[LOW]").to_string(),
+        };
+
+        let skill_tag = match &item.skill {
+            Some(s) => format!(" ({s})"),
+            None => String::new(),
+        };
+
+        println!(
+            "  {}. {} {}{}",
+            item.id, priority_badge, item.title, skill_tag
+        );
+    }
+
+    println!();
+    println!("{} total item(s)", todos.len());
 }
 
 /// Executa a demonstração embutida da máquina de estados.
