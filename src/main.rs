@@ -95,6 +95,8 @@ async fn main() -> Result<()> {
 
             progress.complete(&state_machine::JobOutcome::Success);
             progress.print_audit(&record);
+            let repo_lines = ui::count_repo_lines();
+            progress.print_footer(&record, repo_lines);
         }
 
         Command::Status => {
