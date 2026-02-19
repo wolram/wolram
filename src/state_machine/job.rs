@@ -165,6 +165,41 @@ impl Job {
     }
 }
 
+/// Priority level for a TODO item.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Priority {
+    /// Must be done first or is critical.
+    High,
+    /// Normal priority.
+    Medium,
+    /// Nice-to-have or can be deferred.
+    Low,
+}
+
+impl std::fmt::Display for Priority {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Priority::High => write!(f, "high"),
+            Priority::Medium => write!(f, "medium"),
+            Priority::Low => write!(f, "low"),
+        }
+    }
+}
+
+/// A single actionable TODO item generated from a natural language prompt.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TodoItem {
+    /// Sequential identifier (1-based).
+    pub id: u32,
+    /// Short, actionable title describing the task.
+    pub title: String,
+    /// Priority level for ordering work.
+    pub priority: Priority,
+    /// Optional skill category (e.g., "testing", "code_generation").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub skill: Option<String>,
+}
+
 /// Registro de auditoria estruturado produzido ao final de um job.
 ///
 /// Contém todas as informações relevantes para rastreabilidade: identificadores,
