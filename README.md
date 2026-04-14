@@ -62,6 +62,8 @@ I design and ship AI-native systems — combining deep technical architecture wi
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev)
 [![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://rust-lang.org)
+[![Shell](https://img.shields.io/badge/Shell_Script-121011?style=for-the-badge&logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
+[![tmux](https://img.shields.io/badge/tmux-1BB91F?style=for-the-badge&logo=tmux&logoColor=white)](https://github.com/tmux/tmux)
 
 ---
 
@@ -129,6 +131,8 @@ I design and ship AI-native systems — combining deep technical architecture wi
 | 🦀 Language | Rust | 🔸 Beginner | 6 mo |
 | 🐹 Language | Go | 🔸 Beginner | 6 mo |
 | 📦 DevOps | Docker | 🔹 Intermediate | 2 yrs |
+| 🖥️ Tooling | Shell Script (sh/bash) | 🔹 Intermediate+ | — |
+| 🖥️ Tooling | tmux | 🔹 Intermediate+ | — |
 
 ---
 
