@@ -24,7 +24,7 @@ I design and ship AI-native systems — combining deep technical architecture wi
 |---|---|---|
 | **[CLTX — PJ Management](https://github.com/wolram/CLT-x-PJ)** | React · TypeScript · Node · iOS · Android | [cltxpj.app.br](https://cltxpj.app.br) |
 | **[Lexend Scholar](https://github.com/wolram/Lexend-Scholar)** | React · Swift · Android · Node | — |
-| **[PhotoCleaner](https://github.com/wolram/PhotoCleaner)** | Swift · Vision Framework · CoreML | iOS |
+| **[Snap Sieve — PhotoCleaner](https://github.com/wolram/PhotoCleaner)** | Swift 6 · Vision · CoreML · SwiftUI · macOS 26+ · iOS · visionOS | On-Device AI |
 | **[VotoData](https://github.com/wolram/VotoData)** | Next.js · TypeScript · D3 | [wolram.github.io/votodata](https://wolram.github.io/votodata) |
 | **[JusCalc](https://github.com/wolram/juscalc)** | Next.js · Prisma · Supabase | — |
 | **[Juridiques](https://github.com/wolram/juridiques)** | React · FastAPI · Electron | — |
