@@ -146,4 +146,6 @@ I design and ship AI-native systems — combining deep technical architecture wi
 
 *Building with AI · Shipping to production · [marlow.dev.br](https://marlow.dev.br)*
 
+[![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97706?style=flat-square&logo=anthropic&logoColor=white)](https://claude.ai/code)
+
 </div>
