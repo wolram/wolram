@@ -48,6 +48,7 @@ I design and ship AI-native systems — combining deep technical architecture wi
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co)
 [![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain.com)
 [![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
+[![Qiskit](https://img.shields.io/badge/Qiskit-6929C4?style=for-the-badge&logo=ibm&logoColor=white)](https://qiskit.org)
 
 ---
 
@@ -130,6 +131,7 @@ I design and ship AI-native systems — combining deep technical architecture wi
 | 🤖 AI/LLM | Claude Code Skills | 🔹 Intermediate | 8 mo |
 | 🤖 AI/LLM | Claude Code Subagents | 🔹 Intermediate → 🔷 Advanced | 8 mo |
 | 🤖 AI/LLM | HuggingFace · LangChain · LangGraph | 🌱 Learning | — |
+| ⚛️ Quantum | Quantum Computing | 🌱 Newbie | — |
 | 🍎 Mobile | Swift / SwiftUI / CoreML | 🔹 Intermediate | 3 yrs |
 | 🎨 Design | Figma / Design Systems | 🔸 Beginner | 3 yrs |
 | 🦀 Language | Rust | 🔸 Beginner | 6 mo |
