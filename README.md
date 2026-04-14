@@ -47,12 +47,13 @@ I design and ship AI-native systems — combining deep technical architecture wi
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
-![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python_Expert_7yrs-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Data/ML](https://img.shields.io/badge/Data_%2F_ML_5yrs-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)
 
 ---
 
@@ -70,19 +71,19 @@ I design and ship AI-native systems — combining deep technical architecture wi
 |---|---|---|---|
 | 🏗️ Architecture | Technical Architecture | ⭐ Expert | 8 yrs |
 | 🤖 AI/LLM | Context Engineering | ⭐ Expert | 1.5 yrs |
+| 🐍 Backend | Python / FastAPI | ⭐ Expert | 7 yrs |
 | 👥 Leadership | Tech Lead | 🔷 Advanced | 5 yrs |
-| 🤖 AI/LLM | Claude Code | 🔷 Advanced | 1 yr |
-| ⚛️ Frontend | React | 🔹 Intermediate | 3 yrs |
-| 📘 Language | TypeScript | 🔹 Intermediate | 3 yrs |
-| 🟢 Backend | Node.js | 🔹 Intermediate | 3 yrs |
+| 🤖 AI/LLM | Claude Code — Desktop & CLI | 🔷 Advanced | 1 yr |
+| ⚛️ Frontend | React (Vanilla + Next.js) | 🔹 Intermediate | 6 yrs |
+| 🟢 Backend | Node.js | 🔹 Intermediate | 6 yrs |
+| 📘 Language | TypeScript | 🔹 Intermediate | 5 yrs |
+| 📊 Data / ML | Data & Machine Learning | 🔹 Intermediate | 5 yrs |
 | 🔧 Tooling | Cursor | 🔹 Intermediate | 1 yr |
 | 🤖 AI/LLM | Claude Code Skills | 🔹 Intermediate | 8 mo |
-| 🤖 AI/LLM | Claude Code Subagents | 🔹 Intermediate | 8 mo |
+| 🤖 AI/LLM | Claude Code Subagents | 🔹 Intermediate → 🔷 Advanced | 8 mo |
 | 🍎 Mobile | Swift / SwiftUI | 🔹 Intermediate | 2 yrs |
-| 🐍 Backend | Python / FastAPI | 🔹 Intermediate | 2 yrs |
 | 🎨 Design | Figma / Design Systems | 🔹 Intermediate | 3 yrs |
 | 📦 DevOps | Docker | 🔹 Intermediate | 3 yrs |
-| ⚡ Language | Rust | 🔹 Learning | — |
 
 ---
 
