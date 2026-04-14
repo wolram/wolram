@@ -37,6 +37,9 @@ I design and ship AI-native systems — combining deep technical architecture wi
 ![Context Engineering](https://img.shields.io/badge/Context_Engineering-Expert-7C3AED?style=for-the-badge&logo=anthropic&logoColor=white)
 ![Cursor](https://img.shields.io/badge/Cursor-Intermediate-000000?style=for-the-badge&logo=cursor&logoColor=white)
 ![Claude Subagents](https://img.shields.io/badge/Claude_Subagents-Intermediate-D97706?style=for-the-badge&logo=anthropic&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
+![OpenAPI](https://img.shields.io/badge/OpenAPI-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)
 
 ---
 
@@ -53,6 +56,16 @@ I design and ship AI-native systems — combining deep technical architecture wi
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Data/ML](https://img.shields.io/badge/Data_%2F_ML_5yrs-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)
+
+---
+
+## ☁️ Cloud & Infra
+
+![Azure](https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)
+![GCP](https://img.shields.io/badge/GCP-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ---
 
