@@ -45,6 +45,9 @@ I design and ship AI-native systems — combining deep technical architecture wi
 [![Perplexity](https://img.shields.io/badge/Perplexity-20808D?style=for-the-badge&logo=perplexity&logoColor=white)](https://perplexity.ai)
 [![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.ai)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)](https://swagger.io/specification/)
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co)
+[![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain.com)
+[![LangGraph](https://img.shields.io/badge/LangGraph-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
 
 ---
 
@@ -126,6 +129,7 @@ I design and ship AI-native systems — combining deep technical architecture wi
 | 🔧 Tooling | Cursor | 🔹 Intermediate | 1 yr |
 | 🤖 AI/LLM | Claude Code Skills | 🔹 Intermediate | 8 mo |
 | 🤖 AI/LLM | Claude Code Subagents | 🔹 Intermediate → 🔷 Advanced | 8 mo |
+| 🤖 AI/LLM | HuggingFace · LangChain · LangGraph | 🌱 Learning | — |
 | 🍎 Mobile | Swift / SwiftUI / CoreML | 🔹 Intermediate | 3 yrs |
 | 🎨 Design | Figma / Design Systems | 🔸 Beginner | 3 yrs |
 | 🦀 Language | Rust | 🔸 Beginner | 6 mo |
