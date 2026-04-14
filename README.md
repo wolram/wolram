@@ -24,65 +24,82 @@ I design and ship AI-native systems — combining deep technical architecture wi
 |---|---|---|
 | **[CLTX — PJ Management](https://github.com/wolram/CLT-x-PJ)** | React · TypeScript · Node · iOS · Android | [cltxpj.app.br](https://cltxpj.app.br) |
 | **[Lexend Scholar](https://github.com/wolram/Lexend-Scholar)** | React · Swift · Android · Node | — |
+| **[PhotoCleaner](https://github.com/wolram/PhotoCleaner)** | Swift · Vision Framework · CoreML | iOS |
 | **[VotoData](https://github.com/wolram/VotoData)** | Next.js · TypeScript · D3 | [wolram.github.io/votodata](https://wolram.github.io/votodata) |
 | **[JusCalc](https://github.com/wolram/juscalc)** | Next.js · Prisma · Supabase | — |
 | **[Juridiques](https://github.com/wolram/juridiques)** | React · FastAPI · Electron | — |
 | **[MSS Consultoria](https://github.com/wolram/04_MSS_Consultoria)** | Next.js · Prisma · Docker | [mssconsultoria.com.br](https://mssconsultoria.com.br) |
+| **[Skills System — Claude Code](https://github.com/wolram/skills)** | Playbooks · Personas · Claude Code | test + prod |
 
 ---
 
 ## 🤖 AI & LLM Stack
 
-![Claude Code](https://img.shields.io/badge/Claude_Code-Advanced-D97706?style=for-the-badge&logo=anthropic&logoColor=white)
-![Context Engineering](https://img.shields.io/badge/Context_Engineering-Expert-7C3AED?style=for-the-badge&logo=anthropic&logoColor=white)
-![Cursor](https://img.shields.io/badge/Cursor-Intermediate-000000?style=for-the-badge&logo=cursor&logoColor=white)
-![Claude Subagents](https://img.shields.io/badge/Claude_Subagents-Intermediate-D97706?style=for-the-badge&logo=anthropic&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
-![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
-![OpenAPI](https://img.shields.io/badge/OpenAPI-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-Advanced-D97706?style=for-the-badge&logo=anthropic&logoColor=white)](https://claude.ai/code)
+[![Context Engineering](https://img.shields.io/badge/Context_Engineering-Expert-7C3AED?style=for-the-badge&logo=anthropic&logoColor=white)](https://claude.ai/code)
+[![Claude Subagents](https://img.shields.io/badge/Claude_Subagents-Intermediate-D97706?style=for-the-badge&logo=anthropic&logoColor=white)](https://claude.ai/code)
+[![Cursor](https://img.shields.io/badge/Cursor-Intermediate-000000?style=for-the-badge&logo=cursor&logoColor=white)](https://cursor.com)
+[![GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-000000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/features/copilot)
+[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
+[![Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://gemini.google.com)
+[![Perplexity](https://img.shields.io/badge/Perplexity-20808D?style=for-the-badge&logo=perplexity&logoColor=white)](https://perplexity.ai)
+[![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.ai)
+[![OpenAPI](https://img.shields.io/badge/OpenAPI-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)](https://swagger.io/specification/)
 
 ---
 
 ## ⚙️ Core Engineering Stack
 
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
-![Python](https://img.shields.io/badge/Python_Expert_7yrs-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
-![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![Data/ML](https://img.shields.io/badge/Data_%2F_ML_5yrs-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Python](https://img.shields.io/badge/Python_Expert_7yrs-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://prisma.io)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+[![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev)
+[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://rust-lang.org)
 
 ---
 
 ## 📊 Data & ML Tools
 
-![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
-![Google Colab](https://img.shields.io/badge/Google_Colab-F9AB00?style=for-the-badge&logo=googlecolab&logoColor=white)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)
-![Seaborn](https://img.shields.io/badge/Seaborn-4C72B0?style=for-the-badge&logo=python&logoColor=white)
-![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
-![Pi-hole](https://img.shields.io/badge/Pi--hole-96060C?style=for-the-badge&logo=pihole&logoColor=white)
+[![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)](https://jupyter.org)
+[![Google Colab](https://img.shields.io/badge/Google_Colab-F9AB00?style=for-the-badge&logo=googlecolab&logoColor=white)](https://colab.research.google.com)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)](https://scikit-learn.org)
+[![Seaborn](https://img.shields.io/badge/Seaborn-4C72B0?style=for-the-badge&logo=python&logoColor=white)](https://seaborn.pydata.org)
+[![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)](https://docs.pydantic.dev)
 
 ---
 
 ## ☁️ Cloud & Infra
 
-![Azure](https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)
-![GCP](https://img.shields.io/badge/GCP-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
-![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+[![Azure](https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com)
+[![GCP](https://img.shields.io/badge/GCP-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://cloud.google.com)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
+[![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![Pi-hole](https://img.shields.io/badge/Pi--hole-96060C?style=for-the-badge&logo=pihole&logoColor=white)](https://pi-hole.net)
+[![Tailscale](https://img.shields.io/badge/Tailscale-242424?style=for-the-badge&logo=tailscale&logoColor=white)](https://tailscale.com)
+[![WireGuard](https://img.shields.io/badge/WireGuard-88171A?style=for-the-badge&logo=wireguard&logoColor=white)](https://wireguard.com)
+
+---
+
+## ⚡ Automation & RPA
+
+[![n8n](https://img.shields.io/badge/n8n-EA4B71?style=for-the-badge&logo=n8n&logoColor=white)](https://n8n.io)
+[![UiPath](https://img.shields.io/badge/UiPath-FA4616?style=for-the-badge&logo=uipath&logoColor=white)](https://uipath.com)
+[![Linear](https://img.shields.io/badge/Linear-5E6AD2?style=for-the-badge&logo=linear&logoColor=white)](https://linear.app)
 
 ---
 
 ## 🎨 Design & Product
 
-![Figma](https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white)
+[![Figma](https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white)](https://figma.com)
+[![Google Stitch](https://img.shields.io/badge/Google_Stitch-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://stitch.withgoogle.com)
 ![Design Systems](https://img.shields.io/badge/Design_Systems-Expert-7C3AED?style=for-the-badge)
 ![Product Management](https://img.shields.io/badge/Product_Management-Advanced-0EA5E9?style=for-the-badge)
 
@@ -92,6 +109,7 @@ I design and ship AI-native systems — combining deep technical architecture wi
 
 | Domain | Skill | Level | XP |
 |---|---|---|---|
+| ⚡ Automation | Process & Workflow Automation | ⭐⭐ Expert | 13 yrs |
 | 🏗️ Architecture | Technical Architecture | ⭐ Expert | 8 yrs |
 | 🤖 AI/LLM | Context Engineering | ⭐ Expert | 1.5 yrs |
 | 🐍 Backend | Python / FastAPI | ⭐ Expert | 7 yrs |
@@ -101,12 +119,16 @@ I design and ship AI-native systems — combining deep technical architecture wi
 | 🟢 Backend | Node.js | 🔹 Intermediate | 6 yrs |
 | 📘 Language | TypeScript | 🔹 Intermediate | 5 yrs |
 | 📊 Data / ML | Data & Machine Learning | 🔹 Intermediate | 5 yrs |
+| 🔢 Math | MATLAB | 🔹 Intermediate | 14 yrs |
+| 🔢 Math | Numeric Calculus · Linear Algebra | 🔹 Intermediate | 13 yrs |
 | 🔧 Tooling | Cursor | 🔹 Intermediate | 1 yr |
 | 🤖 AI/LLM | Claude Code Skills | 🔹 Intermediate | 8 mo |
 | 🤖 AI/LLM | Claude Code Subagents | 🔹 Intermediate → 🔷 Advanced | 8 mo |
-| 🍎 Mobile | Swift / SwiftUI | 🔹 Intermediate | 2 yrs |
-| 🎨 Design | Figma / Design Systems | 🔹 Intermediate | 3 yrs |
-| 📦 DevOps | Docker | 🔹 Intermediate | 3 yrs |
+| 🍎 Mobile | Swift / SwiftUI / CoreML | 🔹 Intermediate | 3 yrs |
+| 🎨 Design | Figma / Design Systems | 🔸 Beginner | 3 yrs |
+| 🦀 Language | Rust | 🔸 Beginner | 6 mo |
+| 🐹 Language | Go | 🔸 Beginner | 6 mo |
+| 📦 DevOps | Docker | 🔹 Intermediate | 2 yrs |
 
 ---
 
