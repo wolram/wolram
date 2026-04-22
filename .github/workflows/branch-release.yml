@@ -1,0 +1,86 @@
+name: Branch Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - hmg
+      - staging
+      - dev
+      - developer
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: branch-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          case "$REF_NAME" in
+            main|master)
+              bump=major
+              base="1.0.0"
+              ;;
+            hmg|staging)
+              bump=minor
+              base="0.1.0"
+              ;;
+            dev|developer)
+              bump=patch
+              base="0.0.1"
+              ;;
+            *)
+              echo "Branch '$REF_NAME' is not configured for releases."
+              exit 0
+              ;;
+          esac
+
+          latest_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1 || true)"
+          if [ -z "$latest_tag" ]; then
+            next_tag="v${base}"
+          else
+            version="${latest_tag#v}"
+            IFS=. read -r major minor patch <<<"$version"
+            case "$bump" in
+              major)
+                major=$((major + 1))
+                minor=0
+                patch=0
+                ;;
+              minor)
+                minor=$((minor + 1))
+                patch=0
+                ;;
+              patch)
+                patch=$((patch + 1))
+                ;;
+            esac
+            next_tag="v${major}.${minor}.${patch}"
+          fi
+
+          if gh release view "$next_tag" >/dev/null 2>&1; then
+            echo "Release $next_tag already exists; skipping."
+            exit 0
+          fi
+
+          gh release create "$next_tag" --target "$SHA" --title "$next_tag" --generate-notes
