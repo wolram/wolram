@@ -2,7 +2,7 @@
 
 # Marlow Sousa
 
-### AI Software Architect · Tech Lead · Full-Stack Engineer
+### Mechanical Engineer · AI Software Architect/Founder · Tech Lead · Full-Stack Engineer
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/marlowsousa)
 [![Website](https://img.shields.io/badge/marlow.dev.br-000000?style=for-the-badge&logo=safari&logoColor=white)](https://marlow.dev.br)
