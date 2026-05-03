@@ -1,12 +1,12 @@
+![Banner](https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:1c2d4a,100:0d1117&height=200&section=header&text=Marlow%20Sousa&fontSize=52&fontColor=e6edf3&animation=fadeIn&fontAlignY=38&desc=AI%20Software%20Architect%20%7C%20LLM%20Tooling%20%7C%20Full-Stack%20Engineering&descAlignY=58&descSize=15&descColor=8b949e)
+
 <div align="center">
 
-# Marlow Sousa
+📧 marlow@mssconsultoria.com.br · 🔗 [GitHub @wolram](https://github.com/wolram) · 💼 [LinkedIn](https://linkedin.com/in/marlowsousa)
 
-### Mechanical Engineer · AI Software Architect/Founder · Tech Lead · Full-Stack Engineer
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/marlowsousa)
-[![Website](https://img.shields.io/badge/marlow.dev.br-000000?style=for-the-badge&logo=safari&logoColor=white)](https://marlow.dev.br)
-[![Email](https://img.shields.io/badge/marlow@mssconsultoria.com.br-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:marlow@mssconsultoria.com.br)
+[![Open to Work](https://img.shields.io/badge/Status-Open%20to%20Work-brightgreen?style=flat-square&logo=checkmarx&logoColor=white)](https://linkedin.com/in/marlowsousa)
+[![Remote Anywhere](https://img.shields.io/badge/Work-Remote%20Anywhere-0078D4?style=flat-square&logo=microsoftteams&logoColor=white)]()
+[![PT / EN](https://img.shields.io/badge/Language-PT%20%7C%20EN-6e40c9?style=flat-square)]()
 
 </div>
 
