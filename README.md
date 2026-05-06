@@ -2,7 +2,7 @@
 
 <div align="center">
 
-marlow@mssconsultoria.com.br · [GitHub @wolram](https://github.com/wolram) · [LinkedIn](https://linkedin.com/in/marlowsousa) · [X](https://x.com/marlowsousa)
+contato@marlow.dev.br · [GitHub @wolram](https://github.com/wolram) · [LinkedIn](https://linkedin.com/in/marlowsousa) · [X](https://x.com/marlowsousa)
 
 ![Remote](https://img.shields.io/badge/Remote-Available-0A0A0A?style=flat)
 ![Focus](https://img.shields.io/badge/AI%20·%20Automation%20·%20SaaS-222222?style=flat)
